@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model FAQ {
+  id        Int      @id @default(autoincrement())
+  question  String
+  answer    String
+  category  String
+  createdAt DateTime @default(now())
+}
+
+model TemplateSurat {
+  id          Int      @id @default(autoincrement())
+  title       String
+  slug        String   @unique
+  description String
+  content     String
+  category    String
+  createdAt   DateTime @default(now())
+}
+
+model Glosarium {
+  id         Int      @id @default(autoincrement())
+  term       String
+  definition String
+  letter     String
+  createdAt  DateTime @default(now())
+}
+
+model Admin {
+  id             Int     @id @default(autoincrement())
+  username       String  @unique
+  email          String  @unique
+  password       String
+  resetToken     String?
+  resetExpires   DateTime?
+}
+
+model LegalDocument {
+  id          Int      @id @default(autoincrement())
+  source      String
+  sourceId    String
+  jenis       String
+  nomor       String
+  tahun       String
+  judul       String
+  tentang     String?
+  status      String   @default("berlaku")
+  tanggal     DateTime?
+  urlSumber   String?
+  urlPdf      String?
+  instansi    String?
+  checksum    String?
+  fullText    String?
+  syncedAt    DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@unique([source, sourceId])
+  @@index([jenis])
+  @@index([tahun])
+  @@index([status])
+}
+
+model SyncLog {
+  id           Int      @id @default(autoincrement())
+  source       String
+  status       String
+  documentsNew Int      @default(0)
+  documentsUpdated Int  @default(0)
+  documentsFailed   Int  @default(0)
+  message      String?
+  duration     Int?
+  startedAt    DateTime @default(now())
+  finishedAt   DateTime?
+}
