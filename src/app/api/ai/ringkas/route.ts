@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getApiKey } from "@/lib/apikey";
 
 export const dynamic = "force-dynamic";
 
@@ -6,7 +7,7 @@ export async function POST(req: Request) {
   try {
     const { text } = await req.json();
 
-    const apiKey = process.env.GROQ_API_KEY;
+    const apiKey = await getApiKey();
     if (!apiKey || !apiKey.startsWith("gsk_")) {
       return NextResponse.json({
         summary:

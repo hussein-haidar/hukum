@@ -1,28 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 export default function AdminApiKeyPage() {
   const [apiKey, setApiKey] = useState("");
   const [status, setStatus] = useState("");
-  const [testResult, setTestResult] = useState<string | null>(null);
+  const [currentKey, setCurrentKey] = useState<{ hasKey: boolean; masked: string | null } | null>(null);
   const [testing, setTesting] = useState(false);
 
-  // Fungsi simpan dan langsung test koneksi
+  useEffect(() => {
+    fetch("/api/admin/api-key")
+      .then((r) => r.json())
+      .then((data) => setCurrentKey(data))
+      .catch(() => {});
+  }, []);
+
   const handleSave = async () => {
     if (!apiKey.trim()) {
       setStatus("API Key tidak boleh kosong");
       return;
     }
-    // Simpan ke global state
-    ;(globalThis as any).GROQ_API_KEY = apiKey;
-    
-    // Lakukan test koneksi langsung
-    setStatus("Mengecek koneksi...");
+    setStatus("Menyimpan...");
     setTesting(true);
-    setTestResult(null);
-    
+    try {
+      const res = await fetch("/api/admin/api-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey, action: "save" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatus("Tersimpan ke database");
+        setCurrentKey({ hasKey: true, masked: apiKey.slice(0, 7) + "..." + apiKey.slice(-4) });
+      } else {
+        setStatus(data.message);
+      }
+    } catch (error) {
+      setStatus("Gagal menyimpan");
+    } finally {
+      setTesting(false);
+      setApiKey("");
+    }
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    setStatus("Mengecek koneksi...");
     try {
       const res = await fetch("/api/admin/api-key", {
         method: "POST",
@@ -30,31 +54,11 @@ export default function AdminApiKeyPage() {
         body: JSON.stringify({ apiKey, action: "test" }),
       });
       const data = await res.json();
-      if (data.success) {
-        setStatus("Disimpan dan terhubung ✅");
-        setTestResult("✅ " + data.message);
-      } else {
-        setStatus("Disimpan tapi koneksi gagal ❌");
-        setTestResult("❌ " + data.message);
-      }
+      setStatus(data.success ? data.message : data.message);
     } catch (error) {
-      setStatus("Disimpan tapi gagal cek koneksi ❌");
-      setTestResult("❌ Gagal terhubung ke server: " + (error instanceof Error ? error.message : "Unknown"));
+      setStatus("Gagal cek koneksi");
     } finally {
       setTesting(false);
-    }
-    setApiKey("");
-  };
-
-  const handleTest = () => {
-    if (!apiKey.trim()) {
-      setTestResult("Masukkan terlebih dahulu");
-      return;
-    }
-    if (apiKey.startsWith("gsk_")) {
-      setTestResult("✅ Valid");
-    } else {
-      setTestResult("❌ Format salah");
     }
   };
 
@@ -65,8 +69,20 @@ export default function AdminApiKeyPage() {
           Pengelolaan Groq API Key
         </h1>
 
+        {currentKey?.hasKey && (
+          <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded mb-4 text-center text-sm">
+            API Key aktif: <span className="font-mono">{currentKey.masked}</span>
+          </div>
+        )}
+
+        {!currentKey?.hasKey && currentKey !== null && (
+          <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 p-3 rounded mb-4 text-center text-sm">
+            Belum ada API Key tersimpan. Silakan masukkan di bawah.
+          </div>
+        )}
+
         {status && (
-          <div className="bg-green-100 text-green-800 p-2 rounded mb-4 text-center">
+          <div className="bg-blue-50 text-blue-700 p-2 rounded mb-4 text-center text-sm">
             {status}
           </div>
         )}
@@ -82,40 +98,38 @@ export default function AdminApiKeyPage() {
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder="gsk_... (dari Groq Dashboard)"
-              required
             />
           </div>
 
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-          >
-            Simpan API Key
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={testing}
+              className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              Simpan
+            </button>
+            <button
+              type="button"
+              onClick={handleTest}
+              disabled={testing || !apiKey.trim()}
+              className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors disabled:opacity-50"
+            >
+              Test Koneksi
+            </button>
+          </div>
         </form>
 
-        {testResult && (
-          <div className="mt-4 text-center">
-            <span className={`text-lg font-medium ${
-              testResult.startsWith("✅") ? "text-green-600" : "text-red-600"
-            }`}>
-              {testResult}
-            </span>
-          </div>
-        )}
-
-        {/* TOMBOL BARU: DAPATKAN API KEY GROQ AI */}
         <div className="mt-6 w-full text-center">
           <a
             href="https://console.groq.com/keys"
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full bg-purple-600 text-white py-3 rounded-lg font-medium hover:bg-purple-700 transition-colors text-sm">
+            className="w-full inline-block bg-purple-600 text-white py-3 rounded-lg font-medium hover:bg-purple-700 transition-colors text-sm"
+          >
             Dapatkan API Key Groq AI
           </a>
         </div>
-
-
       </div>
     </div>
   );

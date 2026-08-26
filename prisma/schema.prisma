@@ -79,3 +79,9 @@ model SyncLog {
   startedAt    DateTime @default(now())
   finishedAt   DateTime?
 }
+
+model SystemConfig {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

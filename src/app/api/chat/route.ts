@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getApiKey } from "@/lib/apikey";
 
 function matchesLocal(faq: any, message: string): boolean {
   const lowerMsg = message.toLowerCase();
@@ -138,7 +139,7 @@ export async function POST(req: Request) {
       console.error("Legal search error:", err);
     }
 
-    const apiKey = process.env.GROQ_API_KEY;
+    const apiKey = await getApiKey();
     if (apiKey && apiKey.startsWith("gsk_")) {
       try {
         const Groq = (await import("groq-sdk")).default;
