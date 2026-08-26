@@ -65,7 +65,7 @@ export async function syncPeraturanGoId(): Promise<SyncResult> {
 
   for (let page = 1; page <= maxPages; page++) {
     try {
-      const url = `${BASE_URL}?PeraturanSearch%5Bidglobal%5D=${page}`;
+      const url = `${BASE_URL}?page=${page}`;
 
       const res = await fetch(url, {
         headers: {
