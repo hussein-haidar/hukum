@@ -1,6 +1,7 @@
 import { syncJDIHN } from "./jdihn";
 import { syncBPK } from "./perpusnas";
 import { syncSampleData } from "./sample";
+import { syncPeraturanGoId } from "./peraturan-go-id";
 import { SyncResult } from "./types";
 
 export type { SyncResult };
@@ -8,11 +9,8 @@ export type { SyncResult };
 export async function syncAll(): Promise<SyncResult[]> {
   const results: SyncResult[] = [];
 
-  const jdihnResult = await syncJDIHN();
-  results.push(jdihnResult);
-
-  const bpkResult = await syncBPK();
-  results.push(bpkResult);
+  const peraturanResult = await syncPeraturanGoId();
+  results.push(peraturanResult);
 
   return results;
 }
@@ -24,6 +22,8 @@ export async function syncSource(source: string): Promise<SyncResult> {
     case "perpusnas":
     case "bpk":
       return syncBPK();
+    case "peraturan":
+      return syncPeraturanGoId();
     case "sample":
       return syncSampleData();
     default:
