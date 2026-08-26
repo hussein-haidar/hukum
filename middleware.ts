@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 
 const publicRoutes = ["/", "/admin/login", "/admin/register", "/admin/forgot-password", "/admin/reset-password"];
 
-export function middleware(request) {
+export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isPublicRoute = publicRoutes.includes(path);
 
