@@ -3,6 +3,34 @@ import { SyncResult } from "./types";
 
 const BASE_URL = "https://pasal.id";
 
+function extractDocs(html: string): any[] {
+  const docs: any[] = [];
+  const text = html.replace(/<[^>]+>/g, "|").replace(/&/g, "&").replace(/&#039;/g, "'");
+  const lines = text.split("|").map((l: string) => l.trim()).filter((l: string) => l.length > 0);
+
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^(Undang-Undang|Peraturan Pemerintah|Peraturan Presiden|Peraturan Menteri|Peraturan Daerah|UUD)\s+Nomor\s+(\d+)\s+Tahun\s+(\d{4})$/);
+    if (m) {
+      let tentang = "";
+      for (let k = i + 1; k < Math.min(i + 5, lines.length); k++) {
+        if (lines[k].length > 10 && !lines[k].match(/^(Dokumen|Pasal|Pemerintah|&nbsp;|\d{4}|Peraturan|Undang)/)) {
+          tentang = lines[k];
+          break;
+        }
+      }
+      docs.push({
+        jenis: m[1],
+        nomor: m[2],
+        tahun: m[3],
+        judul: lines[i],
+        tentang: tentang || lines[i],
+      });
+    }
+  }
+
+  return docs;
+}
+
 export async function syncPasalId(): Promise<SyncResult> {
   const startTime = Date.now();
   let documentsNew = 0;
@@ -10,36 +38,45 @@ export async function syncPasalId(): Promise<SyncResult> {
   let documentsFailed = 0;
   const errors: string[] = [];
 
-  try {
-    const res = await fetch(`${BASE_URL}/api/v1/peraturan`, {
-      headers: {
-        "User-Agent": "HukumKu/1.0 (Open Data Research)",
-        "Authorization": "Bearer pasal_mcp_251a7e945413_4e2e97c881f4673aad0f3c84823550cc50fb348a0fcd63c1",
-        Accept: "application/json",
-      },
-      signal: AbortSignal.timeout(15000),
-    });
+  const lawTypes = ["uu", "pp", "perpres", "permen"];
 
-    if (!res.ok) {
-      const msg = `Pasal.id API mengembalikan status ${res.status}`;
-      errors.push(msg);
-      documentsFailed++;
-    } else {
-      const json = await res.json();
-      const items = json.data || [];
+  for (const type of lawTypes) {
+    try {
+      const url = `${BASE_URL}/peraturan/${type}`;
 
-      for (const item of items) {
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HukumKu/1.0",
+          Accept: "text/html,application/xhtml+xml",
+        },
+        signal: AbortSignal.timeout(20000),
+      });
+
+      if (!res.ok) {
+        errors.push(`Pasal.id page ${type}: HTTP ${res.status}`);
+        documentsFailed++;
+        continue;
+      }
+
+      const html = await res.text();
+
+      if (html.length < 1000) {
+        errors.push(`Pasal.id page ${type}: invalid response from server`);
+        documentsFailed++;
+        continue;
+      }
+
+      const docs = extractDocs(html);
+
+      if (docs.length === 0) {
+        errors.push(`Pasal.id page ${type}: no documents found`);
+        documentsFailed++;
+        continue;
+      }
+
+      for (const doc of docs) {
         try {
-          const sourceId = String(item.id || "");
-          const jenis = item.jenis || "";
-          const nomor = item.nomor || "";
-          const tahun = item.tahun || "";
-          const judul = item.judul || "";
-
-          if (!sourceId || !judul) {
-            documentsFailed++;
-            continue;
-          }
+          const sourceId = `${type}-${doc.nomor}-${doc.tahun}`;
 
           const existing = await prisma.legalDocument.findUnique({
             where: {
@@ -57,14 +94,14 @@ export async function syncPasalId(): Promise<SyncResult> {
               data: {
                 source: "pasal.id",
                 sourceId,
-                jenis,
-                nomor: String(nomor),
-                tahun: String(tahun),
-                judul,
-                tentang: item.tentang || judul,
+                jenis: doc.jenis,
+                nomor: doc.nomor,
+                tahun: doc.tahun,
+                judul: doc.judul,
+                tentang: doc.tentang,
                 status: "berlaku",
-                urlSumber: item.url || `${BASE_URL}/peraturan/${sourceId}`,
-                instansi: item.instansi || undefined,
+                urlSumber: `${BASE_URL}/peraturan/${type}-${doc.nomor}-${doc.tahun}`,
+                instansi: undefined,
               },
             });
             documentsNew++;
@@ -73,19 +110,21 @@ export async function syncPasalId(): Promise<SyncResult> {
           documentsFailed++;
         }
       }
+
+      await new Promise((r) => setTimeout(r, 2000));
+    } catch (err: any) {
+      const errMsg = err.name === "TimeoutError"
+        ? `Pasal.id page ${type}: timeout`
+        : `Pasal.id page ${type}: ${err.message || "error"}`;
+      errors.push(errMsg);
+      documentsFailed++;
     }
-  } catch (err: any) {
-    const msg = err.name === "TimeoutError" || err.name === "AbortError"
-      ? "Pasal.id API timeout - server tidak merespon dalam 15 detik"
-      : `Pasal.id API error: ${err.message || "Unknown"}`;
-    errors.push(msg);
-    documentsFailed++;
   }
 
   const duration = Date.now() - startTime;
   const finalStatus = documentsNew === 0 && documentsFailed > 0 ? "failed" : documentsNew > 0 ? "success" : "partial";
   const message = errors.length > 0
-    ? `${errors.join("; ")}${errors.length > 1 ? " (+errors lainnya)" : ""}`
+    ? `${errors.slice(0, 3).join("; ")}${errors.length > 3 ? ` (+${errors.length - 3} lainnya)` : ""}`
     : `Synced ${documentsNew + documentsUpdated} documents from pasal.id`;
 
   await prisma.syncLog.create({
