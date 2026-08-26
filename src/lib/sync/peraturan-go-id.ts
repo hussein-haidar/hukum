@@ -5,53 +5,26 @@ const BASE_URL = "https://peraturan.go.id/cariglobal";
 
 function extractDocs(html: string): any[] {
   const docs: any[] = [];
-  const text = html.replace(/<[^>]+>/g, "\n").replace(/&amp;/g, "&").replace(/&#039;/g, "'");
+  const text = html.replace(/<[^>]+>/g, "|").replace(/&amp;/g, "&").replace(/&#039;/g, "'");
+  const lines = text.split("|").map((l: string) => l.trim()).filter((l: string) => l.length > 0);
 
-  const pattern = /(UU|PP|PERPRES|PERMEN|PERDA|TAPMPR|PERPPU|KEPPRES|INPRES|PERBAN)\s+(\d{4})\s*\n+(.*?Nomor\s+(\d+)\s+(?:Tahun\s+)?(\d{4})\s*\n+(.*?))\n/g;
-
-  let m: RegExpExecArray | null;
-  while ((m = pattern.exec(text)) !== null) {
-    const judul = m[5].trim();
-    if (judul.length > 5) {
-      docs.push({
-        jenisShort: m[1],
-        tahun: m[2],
-        judul: judul.replace(/\s+/g, " "),
-        nomor: m[4],
-      });
-    }
-  }
-
-  if (docs.length === 0) {
-    const simplePattern = /(UU|PP|PERPRES|PERMEN|PERDA|TAPMPR|PERPPU|KEPPRES|INPRES|PERBAN)\s+(\d{4})/g;
-    let sm: RegExpExecArray | null;
-    const seen = new Set<string>();
-
-    while ((sm = simplePattern.exec(text)) !== null) {
-      const jenisShort = sm[1];
-      const tahun = sm[2];
-      const afterMatch = text.substring(sm.index, sm.index + 500);
-      const lines = afterMatch.split("\n").map((l: string) => l.trim()).filter((l: string) => l.length > 10);
-
-      for (const line of lines) {
-        const nomorMatch = line.match(/Nomor\s+(\d+)/);
-        if (nomorMatch) {
-          const key = `${jenisShort}-${nomorMatch[1]}-${tahun}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-
-          const judulLines = lines.filter((l: string) => l.length > 15 && l !== line && !l.match(/^(UU|PP|PERPRES|PERMEN|PERDA|TAPMPR|PERPPU|Dokumen|Pemerintah|Pencarian|Ditampilan)/));
-          const judul = judulLines[0] || line;
-
-          docs.push({
-            jenisShort,
-            tahun,
-            nomor: nomorMatch[1],
-            judul: judul.replace(/\s+/g, " ").trim(),
-          });
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^(Undang-Undang|Peraturan Pemerintah|Peraturan Presiden|Peraturan Menteri|Peraturan Daerah|Ketetapan MPR|Perppu|Keputusan Presiden|Instruksi Presiden|Peraturan Badan|Peraturan Menteri Hukum dan HAM|Peraturan Menteri Keuangan)\s+Nomor\s+(\d+)\s+Tahun\s+(\d{4})$/);
+    if (m) {
+      let tentang = "";
+      for (let k = i + 1; k < Math.min(i + 4, lines.length); k++) {
+        if (lines[k].length > 10 && !lines[k].match(/^(Dokumen|Pemerintah|&nbsp;|\d{4}|Peraturan|Undang)/)) {
+          tentang = lines[k];
           break;
         }
       }
+      docs.push({
+        jenis: m[1],
+        nomor: m[2],
+        tahun: m[3],
+        judul: lines[i],
+        tentang: tentang || lines[i],
+      });
     }
   }
 
@@ -59,16 +32,26 @@ function extractDocs(html: string): any[] {
 }
 
 const JENIS_MAP: Record<string, string> = {
-  UU: "Undang-Undang",
-  PP: "Peraturan Pemerintah",
-  PERPRES: "Peraturan Presiden",
-  PERMEN: "Peraturan Menteri",
-  PERDA: "Peraturan Daerah",
-  TAPMPR: "Ketetapan MPR",
-  PERPPU: "Perppu",
-  KEPPRES: "Keputusan Presiden",
-  INPRES: "Instruksi Presiden",
-  PERBAN: "Peraturan Badan",
+  "Undang-Undang": "Undang-Undang",
+  "Peraturan Pemerintah": "Peraturan Pemerintah",
+  "Peraturan Presiden": "Peraturan Presiden",
+  "Peraturan Menteri": "Peraturan Menteri",
+  "Peraturan Daerah": "Peraturan Daerah",
+  "Ketetapan MPR": "Ketetapan MPR",
+  "Perppu": "Perppu",
+  "Keputusan Presiden": "Keputusan Presiden",
+  "Instruksi Presiden": "Instruksi Presiden",
+  "Peraturan Badan": "Peraturan Badan",
+  "Peraturan Menteri Hukum dan HAM": "Peraturan Menteri",
+  "Peraturan Menteri Keuangan": "Peraturan Menteri",
+};
+
+const JENIS_SHORT: Record<string, string> = {
+  "Undang-Undang": "uu",
+  "Peraturan Pemerintah": "pp",
+  "Peraturan Presiden": "perpres",
+  "Peraturan Menteri": "permen",
+  "Peraturan Daerah": "perda",
 };
 
 export async function syncPeraturanGoId(): Promise<SyncResult> {
@@ -78,7 +61,7 @@ export async function syncPeraturanGoId(): Promise<SyncResult> {
   let documentsFailed = 0;
   const errors: string[] = [];
 
-  const maxPages = 5;
+  const maxPages = 10;
 
   for (let page = 1; page <= maxPages; page++) {
     try {
@@ -100,7 +83,7 @@ export async function syncPeraturanGoId(): Promise<SyncResult> {
       const html = await res.text();
 
       if (html.includes("An error occurred") || html.length < 1000) {
-        errors.push(`Page ${page}: invalid response`);
+        errors.push(`Page ${page}: invalid response from server`);
         break;
       }
 
@@ -112,8 +95,8 @@ export async function syncPeraturanGoId(): Promise<SyncResult> {
 
       for (const doc of docs) {
         try {
-          const sourceId = `${doc.jenisShort.toLowerCase()}-${doc.nomor}-${doc.tahun}`;
-          const jenis = JENIS_MAP[doc.jenisShort] || doc.jenisShort;
+          const shortType = JENIS_SHORT[doc.jenis] || doc.jenis.toLowerCase().replace(/\s+/g, "-");
+          const sourceId = `${shortType}-${doc.nomor}-${doc.tahun}`;
 
           const existing = await prisma.legalDocument.findUnique({
             where: {
@@ -131,11 +114,11 @@ export async function syncPeraturanGoId(): Promise<SyncResult> {
               data: {
                 source: "peraturan.go.id",
                 sourceId,
-                jenis,
+                jenis: JENIS_MAP[doc.jenis] || doc.jenis,
                 nomor: doc.nomor,
                 tahun: doc.tahun,
                 judul: doc.judul,
-                tentang: doc.judul,
+                tentang: doc.tentang,
                 status: "berlaku",
                 urlSumber: `https://peraturan.go.id/peraturan/${sourceId}`,
                 instansi: "Pemerintah Pusat",
