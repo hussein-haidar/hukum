@@ -33,7 +33,7 @@ export default function TemplateDetailPage({ params }: { params: { slug: string 
   }, [slug]);
 
   const placeholders = template
-    ? [...new Set(template.content.match(/\[([A-Z_]+)\]/g) || [])].map((p) => p.replace(/[\[\]]/g, ""))
+    ? Array.from(new Set(template.content.match(/\[([A-Z_]+)\]/g) || [])).map((p) => p.replace(/[\[\]]/g, ""))
     : [];
 
   const applyValues = () => {

@@ -10,10 +10,10 @@ function matchesLocal(faq: any, message: string): boolean {
 
   const stopwords = ["yang", "dan", "untuk", "dengan", "di", "ke", "dari", "oleh", "adalah", "ini", "itu", "apa", "bagaimana", "gimana"];
 
-  const msgWords = lowerMsg.split(/\s+/).filter((w) => !stopwords.includes(w) && w.length > 3);
-  const questionWords = lowerQuestion.split(/\s+/).filter((w) => !stopwords.includes(w) && w.length > 3);
+  const msgWords = lowerMsg.split(/\s+/).filter((w: string) => !stopwords.includes(w) && w.length > 3);
+  const questionWords = lowerQuestion.split(/\s+/).filter((w: string) => !stopwords.includes(w) && w.length > 3);
 
-  const matchCount = msgWords.filter((w) => questionWords.includes(w)).length;
+  const matchCount = msgWords.filter((w: string) => questionWords.includes(w)).length;
 
   return matchCount >= 2;
 }
@@ -51,11 +51,11 @@ function searchLegalDocuments(message: string): string {
   const words = lowerMsg
     .replace(/[^\w\s]/g, " ")
     .split(/\s+/)
-    .filter((w) => w.length > 2);
+    .filter((w: string) => w.length > 2);
 
   keywords.push(...words);
 
-  return [...new Set(keywords)].join(" ");
+  return Array.from(new Set(keywords)).join(" ");
 }
 
 export async function POST(req: Request) {
