@@ -25,9 +25,10 @@ export default function AdminSyncPage() {
   const [status, setStatus] = useState<SyncStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [selectedSource, setSelectedSource] = useState("all");
+const [selectedSource, setSelectedSource] = useState("all");
   const [syncResults, setSyncResults] = useState<SyncResult[]>([]);
   const [globalMessage, setGlobalMessage] = useState("");
+  const [failedSources, setFailedSources] = useState<Set<string>>(new Set());
 
   const fetchStatus = async () => {
     try {
@@ -49,10 +50,24 @@ export default function AdminSyncPage() {
     return () => clearInterval(interval);
   }, []);
 
+  const sourceLabels: Record<string, string> = {
+    peraturan: "Peraturan.go.id (52.000+ peraturan)",
+    jdihn: "JDIHN (jdihn.go.id)",
+    perpusnas: "Perpusnas (api-jdih.perpusnas.go.id)",
+    pasal: "Pasal.id (Database pasal peraturan)",
+    sample: "Sample Data (20 UU/PP/Perpres/Permen)",
+  };
+
+  const getAvailableSources = () =>
+    ["all", "peraturan", "jdihn", "perpusnas", "pasal", "sample"].filter(
+      src => src === "all" || !failedSources.has(src)
+    );
+
   const handleSync = async () => {
     setSyncing(true);
     setSyncResults([]);
     setGlobalMessage("Sinkronisasi sedang berjalan...");
+    setFailedSources(new Set());
 
     try {
       const res = await fetch("/api/admin/sync", {
@@ -66,14 +81,24 @@ export default function AdminSyncPage() {
         const results: SyncResult[] = data.data;
         setSyncResults(results);
 
+        // Track failed sources to hide from dropdown
+        const failed = results.filter(r => r.status === "failed").map(r => r.source);
+        setFailedSources(new Set(failed));
+
         const totalNew = results.reduce((sum, r) => sum + r.documentsNew, 0);
         const totalFailed = results.reduce((sum, r) => sum + r.documentsFailed, 0);
 
         if (totalNew > 0) {
           setGlobalMessage(`Berhasil! ${totalNew} dokumen baru ditambahkan.`);
         } else if (totalFailed > 0) {
-          const failedSources = results.filter(r => r.status === "failed").map(r => r.source.toUpperCase());
-          setGlobalMessage(`Gagal mengambil data dari: ${failedSources.join(", ")}. Lihat detail di bawah.`);
+          const failedSourcesNames = failed.map(s => {
+            if (s === "peraturan.go.id") return "PERATURAN.GO.ID";
+            if (s === "jdihn") return "JDIHN";
+            if (s === "perpusnas") return "PERPUSNAS";
+            if (s === "pasal") return "PASAL.ID";
+            return s.toUpperCase();
+          });
+          setGlobalMessage(`Gagal mengambil data dari: ${failedSourcesNames.join(", ")}. Lihat detail di bawah.`);
         } else {
           setGlobalMessage("Sinkronisasi selesai.");
         }
@@ -159,10 +184,13 @@ export default function AdminSyncPage() {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">Semua Sumber</option>
-            <option value="peraturan">Peraturan.go.id (52.000+ peraturan)</option>
-            <option value="jdihn">JDIHN (jdihn.go.id)</option>
-            <option value="perpusnas">Perpusnas (api-jdih.perpusnas.go.id)</option>
-            <option value="sample">Sample Data (20 UU/PP/Perpres/Permen)</option>
+            {getAvailableSources().map((src) => (
+              <option key={src} value={src}>
+                {src === "sample"
+                  ? "Sample Data (20 UU/PP/Perpres/Permen)"
+                  : sourceLabels[src]}
+              </option>
+            ))}
           </select>
 
           <button
@@ -180,7 +208,7 @@ export default function AdminSyncPage() {
 
         {selectedSource === "all" && (
           <p className="mt-3 text-sm text-gray-500">
-            Catatan: JDIHN dan Perpusnas membutuhkan akses internet ke server pemerintah. Jika gagal, gunakan opsi Sample Data.
+            Catatan: JDIHN dan Perpusnas membutuhkan akses internet ke server pemerintah. Jika gagal, gunakan opsi Sample Data (dari database) atau Pasal.id.
           </p>
         )}
       </div>

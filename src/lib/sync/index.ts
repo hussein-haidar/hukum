@@ -2,6 +2,7 @@ import { syncJDIHN } from "./jdihn";
 import { syncBPK } from "./perpusnas";
 import { syncSampleData } from "./sample";
 import { syncPeraturanGoId } from "./peraturan-go-id";
+import { syncPasalId } from "./pasal-id";
 import { SyncResult } from "./types";
 
 export type { SyncResult };
@@ -24,6 +25,8 @@ export async function syncSource(source: string): Promise<SyncResult> {
       return syncBPK();
     case "peraturan":
       return syncPeraturanGoId();
+    case "pasal":
+      return syncPasalId();
     case "sample":
       return syncSampleData();
     default:
@@ -36,5 +39,5 @@ export async function syncSource(source: string): Promise<SyncResult> {
         duration: 0,
         message: `Unknown source: ${source}`,
       };
+    }
   }
-}
