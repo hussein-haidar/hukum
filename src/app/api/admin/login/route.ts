@@ -19,7 +19,8 @@ export async function POST(req: Request) {
     const token = Buffer.from(`${admin.id}:${Date.now()}`).toString("base64");
 
     return NextResponse.json({ success: true, token, username: admin.username });
-  } catch (error) {
-    return NextResponse.json({ success: false, message: "Terjadi kesalahan" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Login error:", error);
+    return NextResponse.json({ success: false, message: "Terjadi kesalahan: " + (error?.message || "Unknown") }, { status: 500 });
   }
 }
