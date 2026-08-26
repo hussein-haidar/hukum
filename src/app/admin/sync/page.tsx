@@ -54,12 +54,11 @@ const [selectedSource, setSelectedSource] = useState("all");
     peraturan: "Peraturan.go.id (52.000+ peraturan)",
     jdihn: "JDIHN (jdihn.go.id)",
     perpusnas: "Perpusnas (api-jdih.perpusnas.go.id)",
-    pasal: "Pasal.id (Database pasal peraturan)",
     sample: "Sample Data (20 UU/PP/Perpres/Permen)",
   };
 
   const getAvailableSources = () =>
-    ["all", "peraturan", "jdihn", "perpusnas", "pasal", "sample"].filter(
+    ["all", "peraturan", "jdihn", "perpusnas", "sample"].filter(
       src => src === "all" || !failedSources.has(src)
     );
 
@@ -95,7 +94,6 @@ const [selectedSource, setSelectedSource] = useState("all");
             if (s === "peraturan.go.id") return "PERATURAN.GO.ID";
             if (s === "jdihn") return "JDIHN";
             if (s === "perpusnas") return "PERPUSNAS";
-            if (s === "pasal") return "PASAL.ID";
             return s.toUpperCase();
           });
           setGlobalMessage(`Gagal mengambil data dari: ${failedSourcesNames.join(", ")}. Lihat detail di bawah.`);
