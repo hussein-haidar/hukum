@@ -2,34 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { SyncResult } from "./types";
 
 const BASE_URL = "https://pasal.id";
-
-function extractDocs(html: string): any[] {
-  const docs: any[] = [];
-  const text = html.replace(/<[^>]+>/g, "|").replace(/&/g, "&").replace(/&#039;/g, "'");
-  const lines = text.split("|").map((l: string) => l.trim()).filter((l: string) => l.length > 0);
-
-  for (let i = 0; i < lines.length; i++) {
-    const m = lines[i].match(/^(Undang-Undang|Peraturan Pemerintah|Peraturan Presiden|Peraturan Menteri|Peraturan Daerah|UUD)\s+Nomor\s+(\d+)\s+Tahun\s+(\d{4})$/);
-    if (m) {
-      let tentang = "";
-      for (let k = i + 1; k < Math.min(i + 5, lines.length); k++) {
-        if (lines[k].length > 10 && !lines[k].match(/^(Dokumen|Pasal|Pemerintah|&nbsp;|\d{4}|Peraturan|Undang)/)) {
-          tentang = lines[k];
-          break;
-        }
-      }
-      docs.push({
-        jenis: m[1],
-        nomor: m[2],
-        tahun: m[3],
-        judul: lines[i],
-        tentang: tentang || lines[i],
-      });
-    }
-  }
-
-  return docs;
-}
+const TOKEN = "pasal_mcp_251a7e945413_4e2e97c881f4673aad0f3c84823550cc50fb348a0fcd63c1";
 
 export async function syncPasalId(): Promise<SyncResult> {
   const startTime = Date.now();
@@ -38,45 +11,28 @@ export async function syncPasalId(): Promise<SyncResult> {
   let documentsFailed = 0;
   const errors: string[] = [];
 
-  const lawTypes = ["uu", "pp", "perpres", "permen"];
+  try {
+    // Endpoint laws dengan filter type UU dan limit 20
+    const res = await fetch(`https://pasal.id/api/v1/laws?type=UU&limit=20`, {
+      headers: {
+        "Authorization": `Bearer ${TOKEN}`,
+        "User-Agent": "HukumKu/1.0 (Open Data Research)",
+        Accept: "application/json",
+      },
+    });
 
-  for (const type of lawTypes) {
-    try {
-      const url = `${BASE_URL}/peraturan/${type}`;
+    if (!res.ok) {
+      const msg = `Pasal.id API mengembalikan status ${res.status}`;
+      errors.push(msg);
+      documentsFailed++;
+    } else {
+      const json = await res.json();
+      const laws = json.laws || [];
 
-      const res = await fetch(url, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HukumKu/1.0",
-          Accept: "text/html,application/xhtml+xml",
-        },
-        signal: AbortSignal.timeout(20000),
-      });
-
-      if (!res.ok) {
-        errors.push(`Pasal.id page ${type}: HTTP ${res.status}`);
-        documentsFailed++;
-        continue;
-      }
-
-      const html = await res.text();
-
-      if (html.length < 1000) {
-        errors.push(`Pasal.id page ${type}: invalid response from server`);
-        documentsFailed++;
-        continue;
-      }
-
-      const docs = extractDocs(html);
-
-      if (docs.length === 0) {
-        errors.push(`Pasal.id page ${type}: no documents found`);
-        documentsFailed++;
-        continue;
-      }
-
-      for (const doc of docs) {
+      for (const law of laws) {
         try {
-          const sourceId = `${type}-${doc.nomor}-${doc.tahun}`;
+          // Buat sourceId dari number dan tahun
+          const sourceId = `uu-${law.number}-${law.year}`;
 
           const existing = await prisma.legalDocument.findUnique({
             where: {
@@ -94,13 +50,13 @@ export async function syncPasalId(): Promise<SyncResult> {
               data: {
                 source: "pasal.id",
                 sourceId,
-                jenis: doc.jenis,
-                nomor: doc.nomor,
-                tahun: doc.tahun,
-                judul: doc.judul,
-                tentang: doc.tentang,
-                status: "berlaku",
-                urlSumber: `${BASE_URL}/peraturan/${type}-${doc.nomor}-${doc.tahun}`,
+                jenis: law.type || "UU",
+                nomor: law.number || "",
+                tahun: law.year || "",
+                judul: law.title || "",
+                tentang: law.title || "",
+                status: law.status || "berlaku",
+                urlSumber: `https://pasal.id/peraturan/${law.type || "UU"}-${law.number}-${law.year}`,
                 instansi: undefined,
               },
             });
@@ -111,21 +67,66 @@ export async function syncPasalId(): Promise<SyncResult> {
         }
       }
 
-      await new Promise((r) => setTimeout(r, 2000));
-    } catch (err: any) {
-      const errMsg = err.name === "TimeoutError"
-        ? `Pasal.id page ${type}: timeout`
-        : `Pasal.id page ${type}: ${err.message || "error"}`;
-      errors.push(errMsg);
-      documentsFailed++;
+      // Jika dokumen kurang dari 20, tambah dari search
+      if (documentsNew < 20) {
+        const searchRes = await fetch(`https://pasal.id/api/v1/search?q=ketenagakerjaan&type=UU&limit=20`, {
+          headers: {
+            "Authorization": `Bearer ${TOKEN}`,
+            "User-Agent": "HukumKu/1.0 (Open Data Research)",
+            Accept: "application/json",
+          },
+        });
+
+        if (searchRes.ok) {
+          const searchJson = await searchRes.json();
+          const results = searchJson.results || [];
+
+          for (const result of results) {
+            try {
+              const work = result.work || {};
+              const sourceId = `uu-${work.number}-${work.year}`;
+
+              const existing = await prisma.legalDocument.findUnique({
+                where: { source_sourceId: { source: "pasal.id", sourceId } },
+              });
+
+              if (!existing) {
+                await prisma.legalDocument.create({
+                  data: {
+                    source: "pasal.id",
+                    sourceId,
+                    jenis: work.type || "UU",
+                    nomor: work.number || "",
+                    tahun: work.year || "",
+                    judul: work.title || "",
+                    tentang: work.title || "",
+                    status: work.status || "berlaku",
+                    urlSumber: work.url_href ? `https://pasal.id${work.url_href}` : "",
+                    instansi: undefined,
+                  },
+                });
+                documentsNew++;
+              }
+            } catch (err) {
+              documentsFailed++;
+            }
+          }
+        }
+      }
     }
+  } catch (err: any) {
+    const msg = err.name === "TimeoutError"
+      ? "Pasal.id API timeout - server tidak merespon dalam 15 detik"
+      : `Pasal.id API error: ${err.message || "Unknown"}`;
+    errors.push(msg);
+    documentsFailed++;
   }
 
   const duration = Date.now() - startTime;
   const finalStatus = documentsNew === 0 && documentsFailed > 0 ? "failed" : documentsNew > 0 ? "success" : "partial";
   const message = errors.length > 0
-    ? `${errors.slice(0, 3).join("; ")}${errors.length > 3 ? ` (+${errors.length - 3} lainnya)` : ""}`
-    : `Synced ${documentsNew + documentsUpdated} documents from pasal.id`;
+    ? `${errors.join("; ")}${errors.length > 1 ? " (+errors lainnya)" : ""}`
+    : `Synced ${documentsNew + documentsUpdated} documents from pasal.id API`;
 
   await prisma.syncLog.create({
     data: {
