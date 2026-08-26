@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import Groq from "groq-sdk";
-
-const groq = new Groq({ apiKey: (globalThis as any).GROQ_API_KEY || process.env.GROQ_API_KEY });
 
 function matchesLocal(faq: any, message: string): boolean {
   const lowerMsg = message.toLowerCase();
@@ -141,8 +138,12 @@ export async function POST(req: Request) {
       console.error("Legal search error:", err);
     }
 
-    if (groq.apiKey && groq.apiKey.startsWith("gsk_")) {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (apiKey && apiKey.startsWith("gsk_")) {
       try {
+        const Groq = (await import("groq-sdk")).default;
+        const groq = new Groq({ apiKey });
+
         const faqContext = faqs
           .map((f, i) => `${i + 1}. ${f.question}\n   ${f.answer}`)
           .join("\n\n");
@@ -169,7 +170,7 @@ ${legalContext}
 
 **Pertanyaan pengguna:** ${message}
 
-**Jawaban:`;
+**Jawaban:**`;
 
         const result = await groq.chat.completions.create({
           messages: [{ role: "user", content: prompt }],
