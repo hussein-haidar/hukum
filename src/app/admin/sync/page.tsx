@@ -168,20 +168,19 @@ const [selectedSource, setSelectedSource] = useState("all");
         </h2>
 
         <div className="flex flex-wrap gap-4 items-center">
-          <select
-            value={selectedSource}
-            onChange={(e) => setSelectedSource(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">Semua Sumber</option>
-            {getAvailableSources().map((src) => (
-              <option key={src} value={src}>
-                {src === "sample"
-                  ? "Sample Data (20 UU/PP/Perpres/Permen)"
-                  : sourceLabels[src]}
-              </option>
-            ))}
-          </select>
+            <select
+              value={selectedSource}
+              onChange={(e) => setSelectedSource(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {getAvailableSources().map((src) => (
+                <option key={src} value={src}>
+                  {src === "sample"
+                    ? "Sample Data (20 UU/PP/Perpres/Permen)"
+                    : sourceLabels[src]}
+                </option>
+              ))}
+            </select>
 
           <button
             onClick={handleSync}
