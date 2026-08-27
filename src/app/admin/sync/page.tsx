@@ -54,7 +54,6 @@ const [selectedSource, setSelectedSource] = useState("all");
     "peraturan.go.id": "Peraturan.go.id",
     "jdihn": "JDIH Kemenkeu",
     "jdihn-kemenkum": "JDIH Kemenkumham",
-    "perpusnas": "JDIH Pusat",
   };
 
   const getAvailableSources = () =>
