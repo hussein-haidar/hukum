@@ -1,84 +1,126 @@
-import { SourceAdapter, FetchResult, RawDocument, NormalizedDocument } from "../types";
+import { SourceAdapter, NormalizedDocument, ExportFormat } from "../types";
 
-// Sumber: Perpustakaan Nasional (api-jdih.perpusnas.go.id)
-// Endpoint: JSON API (membutuhkan bearer token bila disediakan via PERPUSNAS_API_TOKEN).
-// Tahap 1/2: fetchExport & fetchFeed tidak tersedia -> fallback ke fetchList.
+// Sumber: JDIH Pusat (jdihn.go.id) — portal nasional JDIHN.
+// Endpoint: https://jdihn.go.id/api/search?jenis=X&page=Y
+// API JSON terpaginas berisi SELURUH peraturan perundang-undangan nasional.
+//
+// PENTING: Situs jdihn.go.id hanya bisa diakses dari IP Indonesia (geo-blocked).
+// Untuk akses dari server luar Indonesia, setel env JDIHN_PROXY_URL ke proxy
+// yang berada di Indonesia. Contoh: Cloudflare Worker di region Asia (ID).
+//
+// Tanpa proxy, adapter ini akan gagal dan statusnya menjadi "failed" (graceful).
 
-const BASE_URL = "https://api-jdih.perpusnas.go.id";
+const JDIHN_BASE = "https://jdihn.go.id";
 
-function authHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {
-    "User-Agent": "HukumKu/1.0 (Open Data Research)",
-    Accept: "application/json",
-  };
-  const token = process.env.PERPUSNAS_API_TOKEN;
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  return headers;
+// Jenis peraturan yang diambil (ID → nama).
+// 1=UUD, 2=UU, 3=PP, 4=Keppres, 5=Inpres, 6=Permen — ini yang paling relevan.
+const JENIS_TERPENTING = [
+  { id: 1, nama: "UUD" },
+  { id: 2, nama: "Undang-Undang" },
+  { id: 3, nama: "Peraturan Pemerintah" },
+  { id: 4, nama: "Keputusan Presiden" },
+  { id: 5, nama: "Instruksi Presiden" },
+  { id: 6, nama: "Peraturan Menteri" },
+];
+
+const MAX_PAGES_PER_TYPE = 100;
+
+function getProxyBase(): string | null {
+  return process.env.JDIHN_PROXY_URL || null;
+}
+
+function buildSearchUrl(jenisId: number, page: number): string {
+  return `${JDIHN_BASE}/api/search?jenis=${jenisId}&page=${page}`;
+}
+
+function proxyUrl(directUrl: string): string {
+  const proxy = getProxyBase();
+  if (!proxy) return directUrl;
+  return `${proxy}?url=${encodeURIComponent(directUrl)}`;
+}
+
+async function fetchJson(url: string): Promise<any> {
+  const proxied = proxyUrl(url);
+  const res = await fetch(proxied, {
+    headers: {
+      "User-Agent": "HukumKu/1.0 (Open Data Research)",
+      Accept: "application/json",
+    },
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
 }
 
 export const perpusnasAdapter: SourceAdapter = {
   id: "perpusnas",
-  name: "Perpusnas",
+  name: "Perpusnas (JDIH Pusat)",
 
-  async fetchList(page: number, limit = 10): Promise<FetchResult> {
-    const peraturanTypes = ["UU", "PP", "Perpres", "Permen"];
-    const data: RawDocument[] = [];
-    let total = 0;
-    let maxLastPage = 1;
+  // Ambil semua data dari JDIH Pusat lewat export (paginated per jenis).
+  async fetchExport(): Promise<{ content: string; format: ExportFormat } | null> {
+    const allItems: any[] = [];
 
-    for (const type of peraturanTypes) {
-      try {
-        const params = new URLSearchParams({
-          page: String(page),
-          type: "peraturan",
-          keyword: type,
-        });
-        const res = await fetch(`${BASE_URL}?${params}`, {
-          headers: authHeaders(),
-          signal: AbortSignal.timeout(15000),
-        });
-        if (!res.ok) continue;
-        const json = await res.json();
-        const items = json.data || [];
-        total += items.length;
-        maxLastPage = Math.max(maxLastPage, Math.ceil(items.length / limit) + (items.length >= limit ? 1 : 0));
+    for (const jenis of JENIS_TERPENTING) {
+      let page = 1;
+      let totalPages = 1;
 
-        for (const item of items) {
-          const id = item.id;
-          if (!id) continue;
-          data.push({ externalId: String(id), raw: { ...item, _type: type } });
+      while (page <= totalPages && page <= MAX_PAGES_PER_TYPE) {
+        try {
+          const url = buildSearchUrl(jenis.id, page);
+          const json = await fetchJson(url);
+          const items = json.data || [];
+          totalPages = json.meta?.last_page || 1;
+
+          for (const item of items) {
+            allItems.push({ ...item, _jenisId: jenis.id, _jenisNama: jenis.nama });
+          }
+
+          page++;
+          // Jeda antar request untuk sopan
+          await new Promise((r) => setTimeout(r, 500));
+        } catch {
+          // Gagal ambil halaman ini, lanjut ke jenis berikutnya
+          break;
         }
-      } catch {
-        // lanjut ke tipe berikutnya
       }
     }
 
+    if (allItems.length === 0) return null;
+
     return {
-      data,
-      total,
-      page,
-      totalPages: maxLastPage,
-      hasMore: page < maxLastPage,
+      content: JSON.stringify(allItems),
+      format: "json",
     };
   },
 
   normalize(raw: unknown): NormalizedDocument | null {
     const item = raw as Record<string, any>;
-    const sourceId = String(item.id || "");
+    const sourceId = String(item.id_dokumen || item.id || "");
     const judul = item.judul || "";
     if (!sourceId || !judul) return null;
+
+    const jenis = item._jenisNama || item.jenis_peraturan?.name || "";
+    const tahun = String(item.tahun_terbit || "");
+    const nomor = String(item.nomor || "");
+
+    let urlPdf: string | null = null;
+    if (item.download) {
+      urlPdf = item.download.startsWith("http")
+        ? item.download
+        : `${JDIHN_BASE}${item.download}`;
+    }
 
     return {
       source: "perpusnas",
       sourceId,
-      jenis: item.jenis || item._type || "",
-      nomor: String(item.nomor || ""),
-      tahun: String(item.tahun || ""),
+      jenis,
+      nomor,
+      tahun,
       judul,
       tentang: judul,
       status: "berlaku",
-      urlSumber: item.url || null,
-      urlPdf: item.url || null,
+      urlSumber: `${JDIHN_BASE}/pencarian/detail/${sourceId}`,
+      urlPdf,
       instansi: item.instansi || null,
     };
   },

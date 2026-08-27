@@ -50,9 +50,15 @@ const [selectedSource, setSelectedSource] = useState("all");
     return () => clearInterval(interval);
   }, []);
 
-  const sourceLabels: Record<string, string> = {};
+  const sourceLabels: Record<string, string> = {
+    "peraturan.go.id": "Peraturan.go.id",
+    "jdihn": "JDIH Kemenkeu",
+    "jdihn-kemenkum": "JDIH Kemenkumham",
+    "perpusnas": "JDIH Pusat",
+  };
 
-  const getAvailableSources = () => [];
+  const getAvailableSources = () =>
+    Object.keys(sourceLabels).filter((src) => !failedSources.has(src));
 
   const handleSync = async () => {
     setSyncing(true);
@@ -82,12 +88,7 @@ const [selectedSource, setSelectedSource] = useState("all");
         if (totalNew > 0) {
           setGlobalMessage(`Berhasil! ${totalNew} dokumen baru ditambahkan.`);
         } else if (totalFailed > 0) {
-          const failedSourcesNames = failed.map(s => {
-            if (s === "peraturan.go.id") return "PERATURAN.GO.ID";
-            if (s === "jdihn") return "JDIHN";
-            if (s === "perpusnas") return "PERPUSNAS";
-            return s.toUpperCase();
-          });
+          const failedSourcesNames = failed.map(s => sourceLabels[s] || s.toUpperCase());
           setGlobalMessage(`Gagal mengambil data dari: ${failedSourcesNames.join(", ")}. Lihat detail di bawah.`);
         } else {
           setGlobalMessage("Sinkronisasi selesai.");
