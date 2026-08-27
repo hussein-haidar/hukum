@@ -65,7 +65,8 @@ export interface SourceAdapter {
   fetchFeed?: () => Promise<RawDocument[] | null>;
 
   // Fallback: pengambilan terpaginas (API JSON atau hasil scrape HTML).
-  fetchList: (page: number, limit: number) => Promise<FetchResult>;
+  // Opsional: sumber yang hanya punya export/feed tidak perlu mengimplementasikan ini.
+  fetchList?: (page: number, limit: number) => Promise<FetchResult>;
 
   // Tahap 5: Normalisasi / mapper dari schema sumber -> schema Hukumku.
   normalize: (raw: unknown) => NormalizedDocument | null;

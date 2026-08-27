@@ -147,6 +147,9 @@ async function runAdapterSync(adapter: SourceAdapter): Promise<SyncResult> {
     }
 
     // ---- Fallback: list terpaginas ----
+    if (!adapter.fetchList) {
+      return finish("failed", false, "Sumber tidak menyediakan export/feed/list.");
+    }
     const allRaw: RawDocument[] = [];
     let page = 1;
     while (page <= MAX_PAGES) {

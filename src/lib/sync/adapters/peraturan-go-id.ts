@@ -51,7 +51,7 @@ function extractDocs(html: string): ExtractedDoc[] {
 
   for (let i = 0; i < lines.length; i++) {
     const m = lines[i].match(
-      /^(Undang-Undang|Peraturan Pemerintah|Peraturan Presiden|Peraturan Menteri|Peraturan Daerah|Ketetapan MPR|Perppu|Keputusan Presiden|Instruksi Presiden|Peraturan Badan|Peraturan Menteri Hukum dan HAM|Peraturan Menteri Keuangan)\s+Nomor\s+(\d+)\s+Tahun\s+(\d{4})/
+      /^(Undang-Undang|Peraturan Pemerintah|Peraturan Presiden|Peraturan Menteri|Peraturan Daerah|Ketetapan MPR|Perppu|Keputusan Presiden|Instruksi Presiden|Peraturan Badan|Peraturan Menteri Hukum dan HAM|Peraturan Menteri Keuangan)\s+Nomor\s+(\d+)\s+Tahun\s+(\d{4})$/
     );
     if (m) {
       let tentang = "";
