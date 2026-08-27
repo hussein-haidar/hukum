@@ -196,11 +196,11 @@ const [selectedSource, setSelectedSource] = useState("all");
           </button>
         </div>
 
-        {selectedSource === "all" && (
-          <p className="mt-3 text-sm text-gray-500">
-            Catatan: JDIHN dan Perpusnas membutuhkan akses internet ke server pemerintah. Jika gagal, gunakan opsi Sample Data (dari database) atau Pasal.id.
-          </p>
-        )}
+          {selectedSource === "all" && (
+            <p className="mt-3 text-sm text-gray-500">
+              Catatan: Sinkronisasi menjalankan seluruh sumber (peraturan.go.id, JDIHN, Perpusnas) melalui pipeline staging → validasi → normalisasi → deduplikasi. Sumber yang tidak berubah (hash sama) akan dilewati otomatis. Untuk jadwal otomatis 02:00, gunakan scheduler eksternal ke <code>/api/cron/sync?secret=CRON_SECRET</code>.
+            </p>
+          )}
       </div>
 
       {syncResults.length > 0 && (

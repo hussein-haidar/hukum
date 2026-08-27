@@ -74,10 +74,40 @@ model SyncLog {
   documentsNew Int      @default(0)
   documentsUpdated Int  @default(0)
   documentsFailed   Int  @default(0)
+  documentsFound    Int  @default(0)
   message      String?
   duration     Int?
   startedAt    DateTime @default(now())
   finishedAt   DateTime?
+}
+
+// Tahap 4: Tabel staging. Data mentah dari sumber disimpan dulu di sini
+// sebelum divalidasi & dinormalisasi ke tabel utama (LegalDocument).
+// Jika export sumber rusak, database utama tidak langsung ikut rusak.
+model SourceImport {
+  id          Int      @id @default(autoincrement())
+  source      String
+  externalId  String
+  rawData     Json
+  rawHash     String
+  status      String   @default("staged") // staged | valid | invalid | processed
+  errorMessage String?
+  importedAt  DateTime @default(now())
+  processedAt DateTime?
+
+  @@index([source])
+  @@index([status])
+  @@index([source, externalId])
+}
+
+// Tahap 3: Menyimpan hash terakhir dari export/feed/list suatu sumber.
+// Jika hash sama dengan fetch terbaru, proses dilewati (tidak perlu diproses lagi).
+model SyncExportState {
+  id            Int      @id @default(autoincrement())
+  source        String   @unique
+  lastHash      String?
+  lastCheckedAt DateTime @default(now())
+  lastChangedAt DateTime?
 }
 
 model SystemConfig {
