@@ -50,17 +50,9 @@ const [selectedSource, setSelectedSource] = useState("all");
     return () => clearInterval(interval);
   }, []);
 
-  const sourceLabels: Record<string, string> = {
-    peraturan: "Peraturan.go.id (52.000+ peraturan)",
-    jdihn: "JDIHN (jdihn.go.id)",
-    perpusnas: "Perpusnas (api-jdih.perpusnas.go.id)",
-    sample: "Sample Data (20 UU/PP/Perpres/Permen)",
-  };
+  const sourceLabels: Record<string, string> = {};
 
-  const getAvailableSources = () =>
-    ["all", "peraturan", "jdihn", "perpusnas", "sample"].filter(
-      src => src === "all" || !failedSources.has(src)
-    );
+  const getAvailableSources = () => [];
 
   const handleSync = async () => {
     setSyncing(true);
