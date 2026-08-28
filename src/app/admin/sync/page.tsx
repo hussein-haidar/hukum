@@ -30,10 +30,22 @@ const [selectedSource, setSelectedSource] = useState("all");
   const [globalMessage, setGlobalMessage] = useState("");
   const [failedSources, setFailedSources] = useState<Set<string>>(new Set());
 
+  const parseRes = async (res: Response) => {
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      return {
+        success: false,
+        message: `Server mengirim respons non-JSON (status ${res.status}). Sinkronisasi bisa terlalu lama lalu ditimpa timeout server. Coba jalankan via CLI: npm run sync:<sumber> atau periksa log SyncLog.`,
+      };
+    }
+  };
+
   const fetchStatus = async () => {
     try {
       const res = await fetch("/api/admin/sync");
-      const data = await res.json();
+      const data = await parseRes(res);
       if (data.success) {
         setStatus(data.data);
       }
@@ -71,7 +83,7 @@ const [selectedSource, setSelectedSource] = useState("all");
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ source: selectedSource }),
       });
-      const data = await res.json();
+      const data = await parseRes(res);
 
       if (data.success) {
         const results: SyncResult[] = data.data;
