@@ -25,7 +25,11 @@ export default function AdminSyncPage() {
   const [status, setStatus] = useState<SyncStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-const [selectedSource, setSelectedSource] = useState("all");
+const getInitialSource = () => {
+    const available = Object.keys(sourceLabels).filter((src) => !failedSources.has(src));
+    return available.length > 0 ? available[0] : "all";
+  };
+  const [selectedSource, setSelectedSource] = useState(getInitialSource);
   const [syncResults, setSyncResults] = useState<SyncResult[]>([]);
   const [globalMessage, setGlobalMessage] = useState("");
   const [failedSources, setFailedSources] = useState<Set<string>>(new Set());
@@ -209,9 +213,13 @@ const [selectedSource, setSelectedSource] = useState("all");
         </div>
 
           {selectedSource === "all" && (
-            <p className="mt-3 text-sm text-gray-500">
-              Catatan: Sinkronisasi menjalankan seluruh sumber (peraturan.go.id, JDIHN, Perpusnas) melalui pipeline staging → validasi → normalisasi → deduplikasi. Sumber yang tidak berubah (hash sama) akan dilewati otomatis. Untuk jadwal otomatis 02:00, gunakan scheduler eksternal ke <code>/api/cron/sync?secret=CRON_SECRET</code>.
-            </p>
+            <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm font-medium text-amber-800">⚠ Sinkronisasi "Semua Sumber" memakan waktu lama (3–5 menit).</p>
+              <p className="text-xs text-amber-700 mt-1">
+                Request HTTP bisa timeout. Lebih aman: pilih <strong>satu sumber</strong> per klik,
+                atau jalankan via CLI/Cron: <code className="px-1 bg-amber-100 rounded">npx tsx scripts/sync.ts</code>
+              </p>
+            </div>
           )}
       </div>
 
