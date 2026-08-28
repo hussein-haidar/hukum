@@ -1,31 +1,20 @@
-name: Sync HukumKu
-
+name: Scheduled Sync
 on:
   schedule:
-    # Setiap 6 jam: 00:00, 06:00, 12:00, 18:00 UTC
-    - cron: '0 */6 * * *'
-  workflow_dispatch: # Manual trigger dari GitHub UI
-
-env:
-  DATABASE_URL: ${{ secrets.DATABASE_URL }}
-  NODE_OPTIONS: --max-old-space-size=4096
-
+    - cron: '0 2 * * *'   # 02:00 UTC = 09:00 WIB
+  workflow_dispatch:       # manual trigger from GitHub UI
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
+    timeout-minutes: 30
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run sync (semua sumber, langsung ke DB)
-        run: npx tsx scripts/sync.ts
+          cache: 'npm'
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx tsx scripts/sync.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
