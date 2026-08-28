@@ -49,9 +49,10 @@ export async function GET() {
         isSyncing,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Sync status error:", error);
     return NextResponse.json(
-      { success: false, message: "Gagal mengambil status sinkronisasi" },
+      { success: false, message: error?.message || "Gagal mengambil status sinkronisasi" },
       { status: 500 }
     );
   }
@@ -73,9 +74,10 @@ export async function POST(req: Request) {
       success: true,
       data: results,
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Sync error:", error);
     return NextResponse.json(
-      { success: false, message: "Gagal menjalankan sinkronisasi" },
+      { success: false, message: error?.message || "Gagal menjalankan sinkronisasi" },
       { status: 500 }
     );
   }
