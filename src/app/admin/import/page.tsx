@@ -241,7 +241,7 @@ UU,1,2023,KUHP,Kitab Undang-Undang Hukum Pidana,berlaku,DPR RI`}
       <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
         <h3 className="font-semibold text-yellow-800 mb-2">Tips Import dari JDIHN</h3>
         <ol className="text-sm text-yellow-700 space-y-1">
-          <li>1. Buka <a href="https://jdihn.go.id" target="_blank" className="underline">jdihn.go.id</a> di browser</li>
+          <li>1. Buka <a href="https://peraturan.go.id" target="_blank" className="underline">peraturan.go.id</a> di browser</li>
           <li>2. Cari peraturan yang diinginkan</li>
           <li>3. Copy data (judul, nomor, tahun, dll)</li>
           <li>4. Paste ke file JSON/CSV sesuai format di atas</li>

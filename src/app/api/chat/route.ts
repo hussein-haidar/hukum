@@ -235,7 +235,7 @@ ${legalContext}
 1. Konsultasi dengan advokat/penasihat hukum
 2. Kunjungi pengadilan negeri/agama setempat
 3. Hubungi LBH (Lembaga Bantuan Hukum) terdekat
-4. Akses https://jdihn.go.id untuk database peraturan lengkap
+4. Akses https://peraturan.go.id untuk database peraturan nasional
 
 ---\n*Jawaban ini bersifat umum dan bukan pengganti konsultasi hukum profesional.*`;
 

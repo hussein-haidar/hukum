@@ -2,7 +2,6 @@ import { SourceAdapter, FetchResult, RawDocument, NormalizedDocument } from "../
 
 // Sumber: JDIH Kementerian Keuangan (anggota jaringan JDIHN).
 // Endpoint: JSON API terpaginas di https://jdih.kemenkeu.go.id/api/search
-// Dipilih sebagai pengganti api jdihn.go.id pusat yang sering timeout.
 // Terbukti merespons 200 dengan JSON terstruktur (total 10.000+ dokumen).
 
 const BASE_URL = "https://jdih.kemenkeu.go.id";
