@@ -4,11 +4,13 @@ import {
   SyncResult,
   RawDocument,
   SourceExport,
+  NormalizedDocument,
 } from "./types";
 import { sha256Hex, computeSourceFingerprint } from "./hash";
-import { stageBatch, validateStaged, markProcessed } from "./staging";
+import { stageBatch, markProcessed } from "./staging";
 import {
   upsertNormalized,
+  upsertBatchNormalized,
   getLastFingerprint,
   setLastFingerprint,
 } from "./dedupe";
@@ -21,8 +23,9 @@ const LIST_LIMIT = 20;
 // Flow per sumber:
 //   Tahap 1: fetchExport  -> Tahap 3 (hash) -> staging -> normalize -> upsert
 //   Tahap 2: fetchFeed    -> hanya item baru -> detail -> upsert
-//   Fallback: fetchList   -> Tahap 3 (fingerprint) -> staging -> validate
-//                            -> normalize (Tahap 5) -> upsert (Tahap 6/7)
+//   Fallback: fetchList / fetchAll
+//                         -> Tahap 3 (fingerprint) -> staging -> normalize
+//                            -> upsert (Tahap 6/7)
 //   Tahap 10: logging + anomaly detection
 // ============================================================================
 
@@ -36,8 +39,16 @@ async function parseExport(exp: SourceExport): Promise<RawDocument[]> {
     }));
   }
   // csv/xml/zip: implementasi parser sesuai kebutuhan sumber. Untuk saat ini
-  // sumber nyata (JDIHN/Perpusnas/peraturan.go.id) belum menyediakan export.
+  // sumber nyata (JDIHN/peraturan.go.id) belum menyediakan export jenis lain.
   return [];
+}
+
+// Jaring pengaman: tanggal invalid dari normalize (mis. string aneh dari feed
+// 69k dokumen) tidak boleh lolos ke Prisma -> memunculkan "Invalid time value".
+function sanitizeNormalized(n: NormalizedDocument | null): NormalizedDocument | null {
+  if (!n) return n;
+  if (n.tanggal && Number.isNaN(n.tanggal.getTime())) n.tanggal = null;
+  return n;
 }
 
 async function runAdapterSync(adapter: SourceAdapter): Promise<SyncResult> {
@@ -86,18 +97,23 @@ async function runAdapterSync(adapter: SourceAdapter): Promise<SyncResult> {
         const rows = await parseExport(exp);
         documentsFound = rows.length;
         await stageBatch(adapter.id, rows);
-        await validateStaged(adapter.id, (r) => !!r.externalId);
         const staged = await prisma.sourceImport.findMany({
-          where: { source: adapter.id, status: "valid" },
+          where: { source: adapter.id, status: "staged" },
           select: { externalId: true, rawData: true },
         });
+        const normalized: NormalizedDocument[] = [];
         for (const s of staged) {
-          await processNormalized(adapter, s.rawData as unknown, (o) => {
-            if (o === "inserted") documentsNew++;
-            else if (o === "updated") documentsUpdated++;
-            else if (o === "failed") documentsFailed++;
-          });
+          try {
+            const n = sanitizeNormalized(adapter.normalize(s.rawData as unknown));
+            if (n) normalized.push(n);
+            else documentsFailed++;
+          } catch {
+            documentsFailed++;
+          }
         }
+        const { inserted, updated } = await upsertBatchNormalized(normalized);
+        documentsNew += inserted;
+        documentsUpdated += updated;
         await markProcessed(adapter.id);
         await setLastFingerprint(adapter.id, fileHash);
         return finish(
@@ -121,7 +137,7 @@ async function runAdapterSync(adapter: SourceAdapter): Promise<SyncResult> {
         const existingSet = new Set(existing.map((e) => e.sourceId));
         const onlyNew = feed.filter((f) => !existingSet.has(f.externalId));
         for (const f of onlyNew) {
-          let norm = adapter.normalize(f.raw);
+          let norm = sanitizeNormalized(adapter.normalize(f.raw));
           if (norm && adapter.fetchDetail) {
             const d = await adapter.fetchDetail(f.externalId);
             if (d) norm = { ...norm, ...d };
@@ -146,18 +162,25 @@ async function runAdapterSync(adapter: SourceAdapter): Promise<SyncResult> {
       }
     }
 
-    // ---- Fallback: list terpaginas ----
-    if (!adapter.fetchList) {
+    // ---- Fallback: fetchList terpaginas atau fetchAll mandiri ----
+    if (!adapter.fetchList && !adapter.fetchAll) {
       return finish("failed", false, "Sumber tidak menyediakan export/feed/list.");
     }
-    const allRaw: RawDocument[] = [];
-    let page = 1;
-    while (page <= MAX_PAGES) {
-      const res = await adapter.fetchList(page, LIST_LIMIT);
-      allRaw.push(...res.data);
-      documentsFound += res.data.length;
-      if (!res.hasMore || page >= res.totalPages) break;
-      page++;
+
+    let allRaw: RawDocument[] = [];
+    if (adapter.fetchAll) {
+      const docs = await adapter.fetchAll();
+      if (docs) allRaw = docs;
+      documentsFound = allRaw.length;
+    } else {
+      let page = 1;
+      while (page <= MAX_PAGES) {
+        const res = await adapter.fetchList!(page, LIST_LIMIT);
+        allRaw.push(...res.data);
+        documentsFound += res.data.length;
+        if (!res.hasMore || page >= res.totalPages) break;
+        page++;
+      }
     }
 
     if (allRaw.length === 0) {
@@ -179,17 +202,17 @@ async function runAdapterSync(adapter: SourceAdapter): Promise<SyncResult> {
 
     // ---- Tahap 4: staging ----
     await stageBatch(adapter.id, allRaw);
-    await validateStaged(adapter.id, (r) => !!r.externalId);
 
     // ---- Tahap 5, 6, 7: normalize -> dedupe/upsert ----
     const staged = await prisma.sourceImport.findMany({
-      where: { source: adapter.id, status: "valid" },
+      where: { source: adapter.id, status: "staged" },
       select: { externalId: true, rawData: true },
     });
 
+    const normalized: NormalizedDocument[] = [];
     for (const s of staged) {
       try {
-        let norm = adapter.normalize(s.rawData as unknown);
+        let norm = sanitizeNormalized(adapter.normalize(s.rawData as unknown));
         if (!norm) {
           documentsFailed++;
           continue;
@@ -202,13 +225,15 @@ async function runAdapterSync(adapter: SourceAdapter): Promise<SyncResult> {
             // detail opsional
           }
         }
-        const outcome = await upsertNormalized(norm);
-        if (outcome === "inserted") documentsNew++;
-        else if (outcome === "updated") documentsUpdated++;
+        normalized.push(norm);
       } catch {
         documentsFailed++;
       }
     }
+
+    const { inserted, updated } = await upsertBatchNormalized(normalized);
+    documentsNew += inserted;
+    documentsUpdated += updated;
 
     await markProcessed(adapter.id);
     await setLastFingerprint(adapter.id, fingerprint);
@@ -228,21 +253,6 @@ async function runAdapterSync(adapter: SourceAdapter): Promise<SyncResult> {
   } catch (err: any) {
     errors.push(err?.message || "Unknown error");
     return finish("failed", false, errors.slice(0, 3).join("; "));
-  }
-}
-
-async function processNormalized(
-  adapter: SourceAdapter,
-  raw: unknown,
-  onOutcome: (o: "inserted" | "updated" | "unchanged" | "failed") => void
-): Promise<void> {
-  try {
-    let norm = adapter.normalize(raw);
-    if (!norm) return onOutcome("failed");
-    const outcome = await upsertNormalized(norm);
-    onOutcome(outcome);
-  } catch {
-    onOutcome("failed");
   }
 }
 

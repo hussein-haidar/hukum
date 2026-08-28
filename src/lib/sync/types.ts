@@ -68,6 +68,10 @@ export interface SourceAdapter {
   // Opsional: sumber yang hanya punya export/feed tidak perlu mengimplementasikan ini.
   fetchList?: (page: number, limit: number) => Promise<FetchResult>;
 
+  // Fallback alternatif: sumber mengelola crawling sendiri (multi-kategori,
+  // paginasi internal, throttle, dsb. — lihat peraturan.go.id).
+  fetchAll?: () => Promise<RawDocument[] | null>;
+
   // Tahap 5: Normalisasi / mapper dari schema sumber -> schema Hukumku.
   normalize: (raw: unknown) => NormalizedDocument | null;
 

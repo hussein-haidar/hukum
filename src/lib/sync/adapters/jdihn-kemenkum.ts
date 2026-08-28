@@ -26,6 +26,20 @@ function mapJenis(singkatan?: string, jenis?: string): string {
   return "";
 }
 
+// Feed 69k dokumen berisi beragam format tanggal (iso, "dd-mm-yyyy", teks bebas).
+// new Date() saja bisa menghasilkan Invalid Date yang memunculkan
+// "Invalid time value" saat diserialisasi ke Prisma.
+function parseTanggal(v: unknown): Date | null {
+  if (v == null || v === "") return null;
+  const s = String(v).trim();
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return new Date(+iso[1], +iso[2] - 1, +iso[3]);
+  const dmy = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+  if (dmy) return new Date(+dmy[3], +dmy[2] - 1, +dmy[1]);
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 export const jdihnKemenkumAdapter: SourceAdapter = {
   id: "jdihn-kemenkum",
   name: "JDIHN (Kemenkumham Feed)",
@@ -60,7 +74,7 @@ export const jdihnKemenkumAdapter: SourceAdapter = {
       ? "berlaku"
       : "berlaku";
 
-    const tanggal = it.tanggal_penetapan ? new Date(it.tanggal_penetapan) : null;
+    const tanggal = parseTanggal(it.tanggal_penetapan);
     const nomor = it.noPeraturan && it.noPeraturan !== "-" ? String(it.noPeraturan) : "";
 
     return {
