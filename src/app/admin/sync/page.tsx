@@ -22,17 +22,24 @@ interface SyncResult {
 }
 
 export default function AdminSyncPage() {
+  const sourceLabels: Record<string, string> = {
+    "peraturan.go.id": "Peraturan.go.id",
+    "jdihn": "JDIH Kemenkeu",
+    "jdihn-kemenkum": "JDIH Kemenkumham",
+  };
+
   const [status, setStatus] = useState<SyncStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-const getInitialSource = () => {
+  const [failedSources, setFailedSources] = useState<Set<string>>(new Set());
+
+  const getInitialSource = () => {
     const available = Object.keys(sourceLabels).filter((src) => !failedSources.has(src));
     return available.length > 0 ? available[0] : "all";
   };
   const [selectedSource, setSelectedSource] = useState(getInitialSource);
   const [syncResults, setSyncResults] = useState<SyncResult[]>([]);
   const [globalMessage, setGlobalMessage] = useState("");
-  const [failedSources, setFailedSources] = useState<Set<string>>(new Set());
 
   const parseRes = async (res: Response) => {
     const text = await res.text();
@@ -65,12 +72,6 @@ const getInitialSource = () => {
     const interval = setInterval(fetchStatus, 30000);
     return () => clearInterval(interval);
   }, []);
-
-  const sourceLabels: Record<string, string> = {
-    "peraturan.go.id": "Peraturan.go.id",
-    "jdihn": "JDIH Kemenkeu",
-    "jdihn-kemenkum": "JDIH Kemenkumham",
-  };
 
   const getAvailableSources = () =>
     Object.keys(sourceLabels).filter((src) => !failedSources.has(src));
