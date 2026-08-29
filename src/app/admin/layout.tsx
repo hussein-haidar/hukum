@@ -151,33 +151,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             🚪 Logout
           </button>
-          {/* Logout Confirmation Modal */}
-          {showLogoutModal && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur z-50 flex items-center justify-center">
-              <div className="bg-white rounded-lg p-8 w-full max-w-sm shadow-xl">
-                <h2 className="text-xl font-bold text-center text-red-600 mb-6">Yakin ingin keluar?</h2>
-                <div className="flex justify-end space-x-4">
-                  <button
-                    onClick={cancelLogout}
-                    className="px-6 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 text-sm font-medium"
-                    >
-                    Batal
-                  </button>
-                  <button
-                    onClick={confirmLogout}
-                    className="px-6 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700"
-                    >
-                    Ya, Keluar
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
           <Link href="/" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-gray-700" onClick={closeSidebar}>
             ← Kembali ke Website
           </Link>
         </div>
       </aside>
+      {/* Logout Confirmation Modal - outside sidebar for correct viewport centering */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-8 w-full max-w-sm shadow-xl">
+            <h2 className="text-xl font-bold text-center text-red-600 mb-6">Yakin ingin keluar?</h2>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={cancelLogout}
+                className="px-6 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 text-sm font-medium"
+                >
+                Batal
+              </button>
+              <button
+                onClick={confirmLogout}
+                className="px-6 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700"
+                >
+                Ya, Keluar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <main className="w-full md:flex-1 ml-0 md:ml-64 p-6 md:p-8 overflow-auto">
         {/* Mobile header with menu button */}
         <header className="md:hidden mb-6 flex items-center justify-between">
