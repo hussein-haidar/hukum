@@ -94,7 +94,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const closeSidebar = () => setSidebarOpen(false);
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 md:flex">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -104,11 +104,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         />
       )}
       <aside
-        className={`w-64 bg-white border-r border-gray-200 p-4 transition-transform duration-300 ease-in-out z-50 ${
+        className={`w-64 bg-white border-r border-gray-200 p-4 transition-transform duration-300 ease-in-out z-50 md:translate-x-0 ${
           sidebarOpen
             ? "translate-x-0"
-            : "-translate-x-full md:translate-x-0"
-        }`}
+            : "-translate-x-full"
+        } md:fixed md:inset-y-0 md:z-auto`}
       >
         <div className="flex items-center justify-between mb-8 px-2">
           <div className="flex items-center space-x-2">
@@ -178,7 +178,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
         </div>
       </aside>
-      <main className="flex-1 p-6 md:p-8 overflow-auto">
+      <main className="w-full md:flex-1 p-6 md:p-8 overflow-auto">
         {/* Mobile header with menu button */}
         <header className="md:hidden mb-6 flex items-center justify-between">
           <button
