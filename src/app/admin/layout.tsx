@@ -178,7 +178,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
         </div>
       </aside>
-      <main className="w-full md:flex-1 p-6 md:p-8 overflow-auto">
+      <main className="w-full md:flex-1 ml-0 md:ml-64 p-6 md:p-8 overflow-auto">
         {/* Mobile header with menu button */}
         <header className="md:hidden mb-6 flex items-center justify-between">
           <button
