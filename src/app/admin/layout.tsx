@@ -104,11 +104,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         />
       )}
       <aside
-        className={`w-64 bg-white border-r border-gray-200 p-4 transition-transform duration-300 ease-in-out z-50 md:translate-x-0 ${
+        className={`w-64 bg-white border-r border-gray-200 p-4 transition-transform duration-300 ease-in-out z-50 fixed inset-y-0 left-0 ${
           sidebarOpen
             ? "translate-x-0"
             : "-translate-x-full"
-        } md:fixed md:inset-y-0 md:z-auto`}
+        } md:translate-x-0 md:z-auto`}
       >
         <div className="flex items-center justify-between mb-8 px-2">
           <div className="flex items-center space-x-2">
