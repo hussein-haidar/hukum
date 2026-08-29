@@ -23,6 +23,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     loading: true,
     ok: false,
   });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isPublicPage = publicPages.includes(pathname);
 
@@ -90,18 +91,44 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setShowLogoutModal(false);
   };
 
+  const closeSidebar = () => setSidebarOpen(false);
+
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <aside className="w-64 bg-white border-r border-gray-200 p-4 hidden md:block">
-        <div className="flex items-center space-x-2 mb-8 px-2">
-          <span className="text-xl">⚖️</span>
-          <span className="text-lg font-bold text-blue-700">Admin</span>
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={closeSidebar}
+          aria-hidden="true"
+        />
+      )}
+      <aside
+        className={`w-64 bg-white border-r border-gray-200 p-4 transition-transform duration-300 ease-in-out z-50 ${
+          sidebarOpen
+            ? "translate-x-0"
+            : "-translate-x-full md:translate-x-0"
+        }`}
+      >
+        <div className="flex items-center justify-between mb-8 px-2">
+          <div className="flex items-center space-x-2">
+            <span className="text-xl">⚖️</span>
+            <span className="text-lg font-bold text-blue-700">Admin</span>
+          </div>
+          <button
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100"
+            onClick={closeSidebar}
+            aria-label="Tutup menu"
+          >
+            ✕
+          </button>
         </div>
         <nav className="space-y-1">
           {menu.map((item) => (
             <Link
               key={item.href}
               href={item.href}
+              onClick={closeSidebar}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 pathname === item.href
                   ? "bg-blue-50 text-blue-700"
@@ -146,12 +173,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
             </div>
           )}
-          <Link href="/" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-gray-700">
+          <Link href="/" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-gray-700" onClick={closeSidebar}>
             ← Kembali ke Website
           </Link>
         </div>
       </aside>
-      <main className="flex-1 p-6 md:p-8 overflow-auto">{children}</main>
+      <main className="flex-1 p-6 md:p-8 overflow-auto">
+        {/* Mobile header with menu button */}
+        <header className="md:hidden mb-6 flex items-center justify-between">
+          <button
+            className="p-2 rounded-lg bg-white border border-gray-200 shadow-sm"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Buka menu"
+          >
+            ☰
+          </button>
+          <h1 className="text-lg font-bold text-gray-800">Admin</h1>
+          <div className="w-10" /> {/* spacer */}
+        </header>
+        {children}
+      </main>
     </div>
   );
 }
