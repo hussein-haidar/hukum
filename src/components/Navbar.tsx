@@ -37,6 +37,12 @@ export default function Navbar() {
               Kalkulator
             </Link>
             <Link
+              href="/dokumen"
+              className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50"
+            >
+              Peraturan
+            </Link>
+            <Link
               href="/glosarium"
               className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50"
             >
@@ -94,6 +100,7 @@ export default function Navbar() {
             <Link href="/faq" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>FAQ Hukum</Link>
             <Link href="/template-surat" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>Template Surat</Link>
             <Link href="/kalkulator" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>Kalkulator</Link>
+            <Link href="/dokumen" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>Peraturan</Link>
             <Link href="/glosarium" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>Glosarium</Link>
             <Link href="/chatbot" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>Chatbot AI</Link>
             <Link href="/ringkas" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>Ringkas Dokumen</Link>
