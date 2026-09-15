@@ -66,7 +66,7 @@ export default function DokumenPage() {
   useEffect(() => {
     fetchDocuments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [meta.page]);
+  }, [meta.page, search, jenis]);
 
   const handleSearch = () => {
     setMeta((m) => ({ ...m, page: 1 }));

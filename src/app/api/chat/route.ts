@@ -153,19 +153,21 @@ export async function POST(req: Request) {
           .map((g) => `${g.term}: ${g.definition}`)
           .join("\n");
 
-        const prompt = `Kamu adalah asisten hukum Indonesia bernama HukumKu AI.
+        const prompt = `Kamu adalah asisten hukum Indonesia bernama HukumKu AI yang ahli di bidang hukum Indonesia.
 
 **Instruksi:**
-1. Jawab berdasarkan data peraturan di bawah ini JIKA pertanyaan relevan
-2. Sebutkan nomor dan judul peraturan yang digunakan sebagai dasar jawaban
-3. Jika tidak ada data peraturan yang relevan, katakan: "Maaf, informasi ini tidak ada di database kami" dan sarankan konsultasi Advokat
-4. Gunakan bahasa Indonesia yang sederhana dan mudah dipahami
-5. Akhiri selalu dengan disclaimer: "Jawaban AI bersifat informatif dan bukan pengganti konsultasi hukum profesional."
+1. Jawab pertanyaan pengguna secara langsung, jelas, dan spesifik sesuai topik yang ditanyakan
+2. JIKA ada data peraturan di bawah ini yang relevan, gunakan sebagai dasar jawaban dan sebutkan nomor serta judul peraturannya
+3. JIKA tidak ada data peraturan yang relevan di database, tetap JAWAB pertanyaan berdasarkan pengetahuan umum hukum Indonesia yang kamu miliki. Jangan menolak menjawab.
+4. Berikan penjelasan yang praktis dan bisa dipahami oleh orang awam
+5. Jika pertanyaan sangat spesifik dan membutuhkan analisis mendalam, jawab dulu dengan pengetahuan umum lalu sarankan konsultasi advokat untuk kasus spesifik
+6. Gunakan bahasa Indonesia yang sederhana dan mudah dipahami
+7. Selalu akhiri dengan disclaimer: "Jawaban AI bersifat informatif dan bukan pengganti konsultasi hukum profesional."
 
-**FAQ:**
+**Data FAQ:**
 ${faqContext}
 
-**Glosarium:**
+**Glosarium Hukum:**
 ${glossaryContext}
 ${legalContext}
 
@@ -186,7 +188,7 @@ ${legalContext}
       }
     }
 
-    let fallbackAnswer = `Terima kasih atas pertanyaan Anda tentang "${message}".`;
+    let fallbackAnswer = "";
 
     try {
       const searchTerms = searchLegalDocuments(message);
@@ -219,25 +221,28 @@ ${legalContext}
           .slice(0, 5);
 
         if (topDocs.length > 0) {
-          fallbackAnswer += "\n\n**Peraturan yang mungkin terkait:**\n";
+          fallbackAnswer += "**Peraturan yang mungkin terkait:**\n";
           fallbackAnswer += topDocs.map((s) =>
-            `- ${s.doc.jenis} No. ${s.doc.nomor}/${s.doc.tahun} tentang ${s.doc.tentang || s.doc.judul} (${s.doc.urlSumber || "Lihat di JDIHN"})`
-          ).join("\n");
+            `- **${s.doc.jenis} No. ${s.doc.nomor}/${s.doc.tahun}** tentang ${s.doc.tentang || s.doc.judul}\n  Status: ${s.doc.status}${s.doc.urlSumber ? `\n  Sumber: ${s.doc.urlSumber}` : ""}`
+          ).join("\n\n");
+          fallbackAnswer += "\n\n";
         }
       }
     } catch (err) {
       console.error("Legal search fallback error:", err);
     }
 
-    fallbackAnswer += `
+    if (!fallbackAnswer) {
+      fallbackAnswer = `Maaf, layanan AI sedang tidak tersedia saat ini dan tidak ditemukan peraturan spesifik di database kami terkait pertanyaan Anda.\n\n`;
+    }
 
-**Saran kami:**
-1. Konsultasi dengan advokat/penasihat hukum
-2. Kunjungi pengadilan negeri/agama setempat
-3. Hubungi LBH (Lembaga Bantuan Hukum) terdekat
-4. Akses https://peraturan.go.id untuk database peraturan nasional
+    fallbackAnswer += `**Saran:**
+1. Kunjungi [https://peraturan.go.id](https://peraturan.go.id) untuk database peraturan nasional
+2. Kunjungi [https://jdihn.go.id](https://jdihn.go.id) untuk JDIH Nasional
+3. Hubungi LBH (Lembaga Bantuan Hukum) terdekat untuk konsultasi gratis
+4. Konsultasi dengan advokat/penasihat hukum untuk kasus spesifik
 
----\n*Jawaban ini bersifat umum dan bukan pengganti konsultasi hukum profesional.*`;
+---\n*Jawaban ini bersifat informatif dan bukan pengganti konsultasi hukum profesional.*`;
 
     return NextResponse.json({ answer: fallbackAnswer });
 
