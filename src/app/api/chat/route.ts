@@ -13,7 +13,13 @@ function matchesLocal(faq: any, message: string): boolean {
 
   const matchCount = msgWords.filter((w: string) => questionWords.includes(w)).length;
 
-  return matchCount >= 2;
+  if (matchCount < 2) return false;
+  if (msgWords.length === 0 || questionWords.length === 0) return false;
+
+  const msgCoverage = matchCount / msgWords.length;
+  const questionCoverage = matchCount / questionWords.length;
+
+  return msgCoverage >= 0.7 && questionCoverage >= 0.7;
 }
 
 function searchLegalDocuments(message: string): string {
@@ -38,10 +44,20 @@ function searchLegalDocuments(message: string): string {
     "sim": ["surat izin mengemudi"],
   };
 
+  const SEARCH_STOPWORDS = [
+    "berapa", "lama", "masa", "kapan", "apakah", "bagaimana", "gimana", "apa",
+    "yang", "dan", "untuk", "dengan", "di", "ke", "dari", "oleh", "adalah",
+    "ini", "itu", "saya", "anda", "kalau", "jika", "sudah", "masih", "tidak",
+    "bisa", "dapat", "ingin", "cara", "karena", "agar", "supaya", "sebuah",
+    "tersebut", "apabila", "sama", "bila", "juga", "sangat", "sering", "perlu",
+    "tolong", "jelaskan", "dijelaskan", "mengenai", "tentang", "berapakah",
+  ];
+
   const keywords: string[] = [];
 
   for (const [abbr, expansions] of Object.entries(ABBREVIATIONS)) {
-    if (lowerMsg.includes(abbr)) {
+    const pattern = new RegExp(`(^|[^a-z0-9])${abbr}([^a-z0-9]|$)`);
+    if (pattern.test(lowerMsg)) {
       keywords.push(...expansions);
     }
   }
@@ -49,11 +65,112 @@ function searchLegalDocuments(message: string): string {
   const words = lowerMsg
     .replace(/[^\w\s]/g, " ")
     .split(/\s+/)
-    .filter((w: string) => w.length > 2);
+    .filter((w: string) => w.length > 3 && !SEARCH_STOPWORDS.includes(w));
 
   keywords.push(...words);
 
   return Array.from(new Set(keywords)).join(" ");
+}
+
+function cleanMarkdown(text: string): string {
+  if (!text) return text;
+  return text
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/^---+$/gm, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/__(.*?)__/g, "$1")
+    .replace(/_(.*?)_/g, "$1")
+    .replace(/`([^`]*)`/g, "$1")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1 ($2)")
+    .replace(/[*_]/g, "")
+    .replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]+/g, " ")
+    .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015]/g, "-")
+    .replace(/[\u2018\u2019\u201A]/g, "'")
+    .replace(/[\u201C\u201D\u201E]/g, '"')
+    .replace(/\u2026/g, "...")
+    .replace(/\r?\n\s*\r?\n/g, "\n\n")
+    .trim();
+}
+
+function formatSources(docs: any[]): string {
+  return docs
+    .map((d, i) => {
+      let line = `${i + 1}. ${d.jenis} No. ${d.nomor}/${d.tahun} - ${d.judul}`;
+      if (d.tentang) line += `\n   Tentang: ${d.tentang}`;
+      line += `\n   Status: ${d.status}`;
+      if (d.urlSumber) line += `\n   Sumber: ${d.urlSumber}`;
+      return line;
+    })
+    .join("\n");
+}
+
+const REGULATION_TYPES = [
+  "undang-undang",
+  "uud",
+  "perppu",
+  "peraturan",
+  "instruksi presiden",
+  "keputusan presiden",
+  "keputusan menteri",
+  "keputusan bersama menteri",
+  "peraturan pemerintah pengganti undang-undang",
+  "putusan mahkamah konstitusi",
+  "putusan pengadilan",
+  "surat edaran",
+  "rancangan peraturan perundang-undangan",
+  "instrumen hukum internasional",
+  "naskah akademik",
+];
+
+function isRegulation(jenis: string): boolean {
+  const lower = (jenis || "").toLowerCase();
+  return REGULATION_TYPES.some((t) => lower.startsWith(t));
+}
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function hasWholeWord(text: string, word: string): boolean {
+  return new RegExp(`(^|[^a-z0-9A-Z])${escapeRegExp(word.toLowerCase())}([^a-z0-9A-Z]|$)`).test(
+    text.toLowerCase()
+  );
+}
+
+function scoreDocument(doc: any, words: string[]): number {
+  const lowerJudul = doc.judul.toLowerCase();
+  const lowerTentang = (doc.tentang || "").toLowerCase();
+  const lowerJenis = doc.jenis.toLowerCase();
+  let score = 0;
+  let hits = 0;
+  for (const w of words) {
+    const low = w.toLowerCase();
+    if (hasWholeWord(lowerJudul, low)) {
+      score += 3;
+      hits += 1;
+    }
+    if (hasWholeWord(lowerTentang, low)) {
+      score += 2;
+      hits += 1;
+    }
+    if (hasWholeWord(lowerJenis, low)) {
+      score += 1;
+      hits += 1;
+    }
+  }
+  if (hits === 0) return -100;
+  if (isRegulation(lowerJenis)) score += 4;
+  else score -= 3;
+  return score;
+}
+
+function hierarchyWeight(jenis: string): number {
+  const lower = (jenis || "").toLowerCase();
+  if (/^(undang-undang|uud|perppu)/.test(lower)) return 3;
+  if (/^peraturan pemerintah/.test(lower)) return 2;
+  if (isRegulation(lower)) return 1;
+  return 0;
 }
 
 export async function POST(req: Request) {
@@ -65,15 +182,18 @@ export async function POST(req: Request) {
     }
 
     const [faqs, glossaries] = await Promise.all([
-      prisma.fAQ.findMany({ take: 5, orderBy: { createdAt: "desc" } }),
-      prisma.glosarium.findMany({ take: 10 }),
+      prisma.fAQ.findMany({ orderBy: { createdAt: "desc" } }),
+      prisma.glosarium.findMany({ orderBy: { term: "asc" } }),
     ]);
 
     const localMatch = faqs.find((f) => matchesLocal(f, message));
 
     if (localMatch) {
       return NextResponse.json({
-        answer: localMatch.answer + "\n\n---\n*Jawaban ini berdasarkan database FAQ. Untuk kasus spesifik, silakan konsultasi dengan advokat.*"
+        answer: cleanMarkdown(
+          localMatch.answer +
+            "\n\nJawaban ini berdasarkan database FAQ. Untuk kasus spesifik, silakan konsultasi dengan advokat."
+        ),
       });
     }
 
@@ -83,10 +203,13 @@ export async function POST(req: Request) {
 
     if (glossaryMatch) {
       return NextResponse.json({
-        answer: `**${glossaryMatch.term}** adalah: ${glossaryMatch.definition}\n\n---\n*Untuk informasi lebih lanjut, silakan konsultasi dengan advokat atau penasihat hukum.*`
+        answer: cleanMarkdown(
+          `${glossaryMatch.term} adalah: ${glossaryMatch.definition}\n\nUntuk informasi lebih lanjut, silakan konsultasi dengan advokat atau penasihat hukum.`
+        ),
       });
     }
 
+    let sourceDocs: any[] = [];
     let legalContext = "";
     try {
       const searchTerms = searchLegalDocuments(message);
@@ -94,9 +217,9 @@ export async function POST(req: Request) {
         const words = searchTerms.split(" ");
 
         const orConditions = words.flatMap((word) => [
-          { judul: { contains: word } },
-          { tentang: { contains: word } },
-          { jenis: { contains: word } },
+          { judul: { contains: word, mode: "insensitive" as const } },
+          { tentang: { contains: word, mode: "insensitive" as const } },
+          { jenis: { contains: word, mode: "insensitive" as const } },
         ]);
 
         const docs = await prisma.legalDocument.findMany({
@@ -106,33 +229,27 @@ export async function POST(req: Request) {
           orderBy: { tahun: "desc" },
         });
 
-        const scored = docs.map((d) => {
-          const lowerJudul = d.judul.toLowerCase();
-          const lowerTentang = (d.tentang || "").toLowerCase();
-          const lowerJenis = d.jenis.toLowerCase();
-          let score = 0;
-          for (const w of words) {
-            if (lowerJudul.includes(w)) score += 3;
-            if (lowerTentang.includes(w)) score += 2;
-            if (lowerJenis.includes(w)) score += 1;
-          }
-          return { doc: d, score };
-        });
+        const scored = docs.map((d) => ({ doc: d, score: scoreDocument(d, words) }));
 
         const topDocs = scored
-          .filter((s) => s.score > 0)
-          .sort((a, b) => b.score - a.score)
+          .filter((s) => s.score >= 2)
+          .sort((a, b) => {
+            const hb = hierarchyWeight(b.doc.jenis) - hierarchyWeight(a.doc.jenis);
+            if (hb !== 0) return hb;
+            return b.score - a.score;
+          })
           .slice(0, 5);
 
         if (topDocs.length > 0) {
-          legalContext = "\n\n**Peraturan Perundang-undangan Terkait:**\n" +
-            topDocs.map((s, i) =>
-              `${i + 1}. **${s.doc.jenis} No. ${s.doc.nomor}/${s.doc.tahun}**\n` +
-              `   Judul: ${s.doc.judul}\n` +
-              `   Tentang: ${s.doc.tentang || "-"}\n` +
-              `   Status: ${s.doc.status}\n` +
-              `   Sumber: ${s.doc.urlSumber || "-"}`
-            ).join("\n\n");
+          sourceDocs = topDocs.map((s) => s.doc);
+          legalContext =
+            "\n\nData Peraturan Relevan (referensi):\n" +
+            topDocs
+              .map(
+                (s, i) =>
+                  `${i + 1}. ${s.doc.jenis} No. ${s.doc.nomor}/${s.doc.tahun}\n   Judul: ${s.doc.judul}\n   Tentang: ${s.doc.tentang || "-"}\n   Status: ${s.doc.status}`
+              )
+              .join("\n");
         }
       }
     } catch (err) {
@@ -155,96 +272,62 @@ export async function POST(req: Request) {
 
         const prompt = `Kamu adalah asisten hukum Indonesia bernama HukumKu AI yang ahli di bidang hukum Indonesia.
 
-**Instruksi:**
-1. Jawab pertanyaan pengguna secara langsung, jelas, dan spesifik sesuai topik yang ditanyakan
-2. JIKA ada data peraturan di bawah ini yang relevan, gunakan sebagai dasar jawaban dan sebutkan nomor serta judul peraturannya
-3. JIKA tidak ada data peraturan yang relevan di database, tetap JAWAB pertanyaan berdasarkan pengetahuan umum hukum Indonesia yang kamu miliki. Jangan menolak menjawab.
-4. Berikan penjelasan yang praktis dan bisa dipahami oleh orang awam
-5. Jika pertanyaan sangat spesifik dan membutuhkan analisis mendalam, jawab dulu dengan pengetahuan umum lalu sarankan konsultasi advokat untuk kasus spesifik
-6. Gunakan bahasa Indonesia yang sederhana dan mudah dipahami
-7. Selalu akhiri dengan disclaimer: "Jawaban AI bersifat informatif dan bukan pengganti konsultasi hukum profesional."
+Instruksi:
+1. Jawab pertanyaan pengguna secara langsung, jelas, dan spesifik sesuai topik yang ditanyakan.
+2. Gunakan pengetahuan umum hukum Indonesia yang kamu miliki; data FAQ dan peraturan di bawah hanya referensi tambahan.
+3. Jika ada data peraturan relevan di bawah, gunakan sebagai dasar jawaban. Sebutkan nomor undang-undang atau pasal HANYA jika benar dan sesuai data di bawah; jika tidak yakin, jangan mengarang nomor pasal atau nomor UU - cukup jelaskan prinsip hukumnya secara umum.
+4. JANGAN membuat daftar peraturan/sumber di akhir jawaban, karena daftar sumber akan ditambahkan otomatis oleh sistem.
+5. Jika kasus membutuhkan analisis mendalam, berikan penjelasan umum dulu lalu sarankan konsultasi advokat.
+6. Gunakan bahasa Indonesia yang sederhana dan mudah dipahami, tanpa simbol markdown.
+7. Gunakan huruf dan tanda baca standar (ASCII): tanda hubung biasa "-", tanda kutip biasa '"' dan "'", angka dan spasi normal. JANGAN gunakan en-dash, em-dash, tanda kutip keriting, atau karakter Unicode khusus lainnya.
+8. Akhiri dengan disclaimer: "Jawaban AI bersifat informatif dan bukan pengganti konsultasi hukum profesional."
 
-**Data FAQ:**
+Data FAQ:
 ${faqContext}
 
-**Glosarium Hukum:**
+Glosarium Hukum:
 ${glossaryContext}
 ${legalContext}
 
-**Pertanyaan pengguna:** ${message}
+Pertanyaan pengguna: ${message}
 
-**Jawaban:**`;
+Jawaban:`;
 
         const result = await groq.chat.completions.create({
           messages: [{ role: "user", content: prompt }],
           model: "openai/gpt-oss-20b",
         });
 
-        const answer = result.choices[0]?.message?.content || "Maaf, tidak ada jawaban dari AI."
+        const rawAnswer = result.choices[0]?.message?.content || "Maaf, tidak ada jawaban dari AI.";
 
-        return NextResponse.json({ answer });
+        let answer = rawAnswer;
+        if (sourceDocs.length > 0) {
+          answer += `\n\nSumber Dokumen Terkait:\n${formatSources(sourceDocs)}`;
+        }
+
+        return NextResponse.json({ answer: cleanMarkdown(answer) });
       } catch (aiError: any) {
         console.error("Groq AI error:", aiError.message);
       }
     }
 
     let fallbackAnswer = "";
-
-    try {
-      const searchTerms = searchLegalDocuments(message);
-      if (searchTerms) {
-        const words = searchTerms.split(" ");
-        const orConditions = words.flatMap((word) => [
-          { judul: { contains: word } },
-          { tentang: { contains: word } },
-        ]);
-
-        const docs = await prisma.legalDocument.findMany({
-          where: { OR: orConditions.slice(0, 20) },
-          orderBy: { tahun: "desc" },
-        });
-
-        const scored = docs.map((d) => {
-          const lowerJudul = d.judul.toLowerCase();
-          const lowerTentang = (d.tentang || "").toLowerCase();
-          let score = 0;
-          for (const w of words) {
-            if (lowerJudul.includes(w)) score += 3;
-            if (lowerTentang.includes(w)) score += 2;
-          }
-          return { doc: d, score };
-        });
-
-        const topDocs = scored
-          .filter((s) => s.score > 0)
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 5);
-
-        if (topDocs.length > 0) {
-          fallbackAnswer += "**Peraturan yang mungkin terkait:**\n";
-          fallbackAnswer += topDocs.map((s) =>
-            `- **${s.doc.jenis} No. ${s.doc.nomor}/${s.doc.tahun}** tentang ${s.doc.tentang || s.doc.judul}\n  Status: ${s.doc.status}${s.doc.urlSumber ? `\n  Sumber: ${s.doc.urlSumber}` : ""}`
-          ).join("\n\n");
-          fallbackAnswer += "\n\n";
-        }
-      }
-    } catch (err) {
-      console.error("Legal search fallback error:", err);
+    if (sourceDocs.length > 0) {
+      fallbackAnswer = `Peraturan terkait yang kami temukan di database:\n${formatSources(sourceDocs)}`;
+    } else {
+      fallbackAnswer =
+        "Maaf, layanan AI sedang tidak tersedia saat ini dan tidak ditemukan peraturan spesifik di database kami terkait pertanyaan Anda.";
     }
 
-    if (!fallbackAnswer) {
-      fallbackAnswer = `Maaf, layanan AI sedang tidak tersedia saat ini dan tidak ditemukan peraturan spesifik di database kami terkait pertanyaan Anda.\n\n`;
-    }
-
-    fallbackAnswer += `**Saran:**
-1. Kunjungi [https://peraturan.go.id](https://peraturan.go.id) untuk database peraturan nasional
-2. Kunjungi [https://jdihn.go.id](https://jdihn.go.id) untuk JDIH Nasional
+    fallbackAnswer += `\n\nSaran:
+1. Kunjungi https://peraturan.go.id untuk database peraturan nasional
+2. Kunjungi https://jdihn.go.id untuk JDIH Nasional
 3. Hubungi LBH (Lembaga Bantuan Hukum) terdekat untuk konsultasi gratis
 4. Konsultasi dengan advokat/penasihat hukum untuk kasus spesifik
 
----\n*Jawaban ini bersifat informatif dan bukan pengganti konsultasi hukum profesional.*`;
+Jawaban ini bersifat informatif dan bukan pengganti konsultasi hukum profesional.`;
 
-    return NextResponse.json({ answer: fallbackAnswer });
+    return NextResponse.json({ answer: cleanMarkdown(fallbackAnswer) });
 
   } catch (error) {
     console.error("Chat error:", error);

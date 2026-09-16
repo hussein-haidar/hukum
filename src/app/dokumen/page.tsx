@@ -38,34 +38,37 @@ export default function DokumenPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchDocuments = async () => {
+  useEffect(() => {
+    const controller = new AbortController();
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (jenis) params.set("jenis", jenis);
+    params.set("page", String(meta.page));
+
     setLoading(true);
     setError("");
-    try {
-      const params = new URLSearchParams();
-      if (search) params.set("search", search);
-      if (jenis) params.set("jenis", jenis);
-      params.set("page", String(meta.page));
 
-      const res = await fetch(`/api/dokumen?${params.toString()}`);
-      const data = await res.json();
-      if (data.success) {
-        setDocuments(data.data);
-        setMeta(data.meta);
-        setJenisList((data.jenisList as JenisCount[]).map((j) => j.jenis));
-      } else {
-        setError(data.message || "Gagal memuat data");
-      }
-    } catch (err) {
-      setError("Terjadi kesalahan saat memuat data.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetch(`/api/dokumen?${params.toString()}`, { signal: controller.signal })
+      .then((res) => res.json())
+      .then((data) => {
+        if (controller.signal.aborted) return;
+        if (data.success) {
+          setDocuments(data.data);
+          setMeta(data.meta);
+          setJenisList((data.jenisList as JenisCount[]).map((j) => j.jenis));
+        } else {
+          setError(data.message || "Gagal memuat data");
+        }
+      })
+      .catch((err) => {
+        if (controller.signal.aborted) return;
+        setError("Terjadi kesalahan saat memuat data.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
 
-  useEffect(() => {
-    fetchDocuments();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => controller.abort();
   }, [meta.page, search, jenis]);
 
   const handleSearch = () => {
