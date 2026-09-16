@@ -43,6 +43,13 @@ const features = [
     href: "/ringkas",
     color: "bg-teal-50 text-teal-700",
   },
+  {
+    icon: "🤝",
+    title: "Bantuan Hukum",
+    desc: "Tips menghadapi masalah hukum, langkah yang harus diambil, dan direktori lembaga bantuan hukum.",
+    href: "/bantuan-hukum",
+    color: "bg-indigo-50 text-indigo-700",
+  },
 ];
 
 export default function HomePage() {
@@ -66,8 +73,14 @@ export default function HomePage() {
                 Mulai Jelajahi
               </Link>
               <Link
+                href="/bantuan-hukum"
+                className="bg-blue-500/30 border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition-colors"
+              >
+                Cari Bantuan Hukum
+              </Link>
+              <Link
                 href="/chatbot"
-                className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition-colors"
+                className="bg-white/10 border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition-colors"
               >
                 Tanya Chatbot AI
               </Link>
@@ -93,6 +106,9 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-semibold mb-2">{f.title}</h3>
                 <p className="text-gray-600">{f.desc}</p>
+                <div className="mt-4 text-blue-600 text-sm font-medium">
+                  Pelajari Lebih Lanjut →
+                </div>
               </div>
             </Link>
           ))}
@@ -113,6 +129,47 @@ export default function HomePage() {
             <div>
               <div className="text-4xl font-bold text-blue-600 mb-2">24/7</div>
               <div className="text-gray-600">Akses Chatbot AI</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="max-w-7xl mx-auto px-4 py-16">
+        <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-8 md:p-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                Bingung Menghadapi Masalah Hukum?
+              </h2>
+              <p className="text-gray-600 mb-2">
+                Temukan tips menghadapi perkara, langkah-langkah yang harus
+                dilakukan, dan direktori lembaga bantuan hukum gratis di seluruh
+                Indonesia.
+              </p>
+              <Link
+                href="/bantuan-hukum"
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors inline-block mt-4"
+              >
+                Lihat Bantuan Hukum
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white rounded-xl p-4 shadow-sm text-center">
+                <div className="text-3xl mb-2">🚨</div>
+                <p className="text-sm font-medium">Situasi Darurat Hukum</p>
+              </div>
+              <div className="bg-white rounded-xl p-4 shadow-sm text-center">
+                <div className="text-3xl mb-2">💼</div>
+                <p className="text-sm font-medium">Bantuan Hukum Gratis</p>
+              </div>
+              <div className="bg-white rounded-xl p-4 shadow-sm text-center">
+                <div className="text-3xl mb-2">🏛️</div>
+                <p className="text-sm font-medium">Posbakum & LBH</p>
+              </div>
+              <div className="bg-white rounded-xl p-4 shadow-sm text-center">
+                <div className="text-3xl mb-2">📋</div>
+                <p className="text-sm font-medium">Tips & Langkah Hukum</p>
+              </div>
             </div>
           </div>
         </div>

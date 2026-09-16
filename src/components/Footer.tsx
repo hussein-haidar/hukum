@@ -20,6 +20,8 @@ export default function Footer() {
               <li><a href="/template-surat" className="hover:text-white">Template Surat</a></li>
               <li><a href="/kalkulator" className="hover:text-white">Kalkulator Hukum</a></li>
               <li><a href="/glosarium" className="hover:text-white">Glosarium</a></li>
+              <li><a href="/bantuan-hukum" className="hover:text-white">Bantuan Hukum</a></li>
+              <li><a href="/tentang" className="hover:text-white">Tentang Kami</a></li>
             </ul>
           </div>
           <div>
@@ -27,6 +29,7 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li><a href="/chatbot" className="hover:text-white">Chatbot Hukum</a></li>
               <li><a href="/ringkas" className="hover:text-white">Ringkas Dokumen</a></li>
+              <li><a href="/dokumen" className="hover:text-white">Peraturan & Regulasi</a></li>
             </ul>
           </div>
           <div>

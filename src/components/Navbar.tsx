@@ -49,6 +49,12 @@ export default function Navbar() {
               Glosarium
             </Link>
             <Link
+              href="/bantuan-hukum"
+              className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50"
+            >
+              Bantuan Hukum
+            </Link>
+            <Link
               href="/chatbot"
               className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50"
             >
@@ -102,6 +108,7 @@ export default function Navbar() {
             <Link href="/kalkulator" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>Kalkulator</Link>
             <Link href="/dokumen" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>Peraturan</Link>
             <Link href="/glosarium" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>Glosarium</Link>
+            <Link href="/bantuan-hukum" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>Bantuan Hukum</Link>
             <Link href="/chatbot" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>Chatbot AI</Link>
             <Link href="/ringkas" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>Ringkas Dokumen</Link>
           </div>

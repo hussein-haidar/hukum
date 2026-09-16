@@ -40,6 +40,7 @@ export default function DokumenPage() {
 
   useEffect(() => {
     const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     const params = new URLSearchParams();
     if (search) params.set("search", search);
     if (jenis) params.set("jenis", jenis);
@@ -62,13 +63,17 @@ export default function DokumenPage() {
       })
       .catch((err) => {
         if (controller.signal.aborted) return;
-        setError("Terjadi kesalahan saat memuat data.");
+        setError("Terjadi kesalahan saat memuat data. Peraturan mungkin belum disinkronkan.");
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
+        clearTimeout(timeout);
       });
 
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      clearTimeout(timeout);
+    };
   }, [meta.page, search, jenis]);
 
   const handleSearch = () => {
@@ -141,9 +146,32 @@ export default function DokumenPage() {
           <p className="mt-4 text-gray-500">Memuat data...</p>
         </div>
       ) : error ? (
-        <p className="text-center text-red-600 py-12">{error}</p>
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center max-w-2xl mx-auto">
+          <div className="text-5xl mb-4">⚠️</div>
+          <h2 className="text-xl font-bold mb-2">Data Peraturan Belum Tersedia</h2>
+          <p className="text-gray-600 mb-6">
+            {error}
+          </p>
+          <div className="text-gray-500 text-sm space-y-2">
+            <p>Database peraturan belum diisi. Data dapat disinkronkan dari sumber resmi seperti Peraturan.go.id dan JDIH melalui panel admin.</p>
+          </div>
+          <button
+            onClick={() => setMeta((m) => ({ ...m, page: 1 }))}
+            className="mt-6 bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          >
+            Coba Lagi
+          </button>
+        </div>
       ) : documents.length === 0 ? (
-        <p className="text-gray-500 text-center py-12">Tidak ada dokumen ditemukan. Jalankan Data Sync terlebih dahulu di panel admin.</p>
+        <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center max-w-2xl mx-auto">
+          <div className="text-5xl mb-4">📭</div>
+          <h2 className="text-xl font-bold mb-2">Belum Ada Peraturan</h2>
+          <p className="text-gray-600">
+            {search || jenis
+              ? "Tidak ada peraturan yang cocok dengan pencarian Anda. Coba kata kunci lain."
+              : "Database peraturan masih kosong. Jalankan Data Sync melalui panel admin untuk mengambil peraturan dari sumber resmi."}
+          </p>
+        </div>
       ) : (
         <>
           <p className="text-sm text-gray-500 mb-4">

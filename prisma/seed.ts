@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { templateSeeds } from "./templateSeeds";
 
 const prisma = new PrismaClient();
 
@@ -11,10 +12,10 @@ async function main() {
 
   const hashedPassword = await bcrypt.hash("admin123", 10);
   await prisma.admin.create({
-    data: { 
-      username: "admin", 
+    data: {
+      username: "admin",
       email: "admin@hukumku.com",
-      password: hashedPassword 
+      password: hashedPassword,
     },
   });
 
@@ -73,140 +74,7 @@ async function main() {
     await prisma.fAQ.create({ data: faq });
   }
 
-  const templates = [
-    {
-      title: "Surat Kuasa Hukum",
-      slug: "surat-kuasa-hukum",
-      description:
-        "Surat kuasa untuk memberikan wewenang kepada pengacara/advokat",
-      content: `SURAT KUASA HUKUM
-
-Yang bertanda tangan di bawah ini:
-Nama    : [NAMA_PEMBERI_KUASA]
-Alamat  : [ALAMAT_PEMBERI_KUASA]
-No. KTP : [NO_KTP]
-
-Dengan ini memberikan kuasa kepada:
-Nama    : [NAMA_PENERIMA_KUASA]
-Alamat  : [ALAMAT_PENERIMA_KUASA]
-No. Advokat : [NO_ADVOKAT]
-
-Untuk dan atas nama pemberi kuasa melakukan hal-hal sebagai berikut:
-[HAL_YANG_DIKUASAKAN]
-
-Demikian surat kuasa ini saya buat dengan sebenar-benarnya dalam keadaan sehat jasmani dan rohani.
-
-[LOKASI], [TANGGAL]
-
-Pemberi Kuasa,
-[NAMA_PEMBERI_KUASA]
-
-Materai Rp 10.000`,
-      category: "Kuasa",
-    },
-    {
-      title: "Surat Gugatan Perdata",
-      slug: "surat-gugatan-perdata",
-      description: "Surat gugatan untuk perkara perdata di pengadilan negeri",
-      content: `SURAT GUGATAN
-
-Kepada Yang Terhormat
-Ketua Pengadilan Negeri [KOTA]
-
-Penggugat:
-Nama    : [NAMA_PENGGUGAT]
-Alamat  : [ALAMAT_PENGGUGAT]
-
-Tergugat:
-Nama    : [NAMA_TERGUGAT]
-Alamat  : [ALAMAT_TERGUGAT]
-
-BUNYI GUGATAN:
-1. Menyatakan [DALAM_GUGATAN_1]
-2. Menghukum Tergugat untuk [TUNTUTAN_1]
-3. Menghukum Tergugat untuk membayar biaya perkara ini.
-
-Dasar Gugatan:
-[DASAR_HUKUM_DAN_FAKTA]
-
-Demikian gugatan ini kami ajukan dengan sebenar-benarnya.
-
-[LOKASI], [TANGGAL]
-
-Penggugat,
-[NAMA_PENGGUGAT]`,
-      category: "Gugatan",
-    },
-    {
-      title: "Surat Somasi",
-      slug: "surat-somasi",
-      description: "Surat peringatan sebelum dilakukan tindakan hukum lebih lanjut",
-      content: `SURAT SOMASI
-
-Kepada Yth.
-[NAMA_PENERIMA]
-di Tempat
-
-Dengan hormat,
-
-Berdasarkan perjanjian tertulis tanggal [TANGGAL_PERJANJIAN], Kami menyatakan bahwa pihak Bapak/Ibu telah melanggar ketentuan sebagai berikut:
-[PELANGGARAN]
-
-Berdasarkan hal tersebut, kami memberikan peringatan pertama agar Bapak/Ibu segera:
-[TINDAKAN_YANG_HARUS_DILAKUKAN]
-
-Apabila dalam waktu [MASA_TENGGANG] hari sejak surat ini diterima tidak ada itikad baik dari Bapak/Ibu, maka kami akan mengambil langkah hukum yang diperlukan tanpa pemberitahuan lebih lanjut.
-
-Demikian surat somasi ini kami sampaikan. Atas perhatian dan kerjasamanya, kami ucapkan terima kasih.
-
-[LOKASI], [TANGGAL]
-
-[NAMA_PENGIRIM]
-[JABATAN]`,
-      category: "Somasi",
-    },
-    {
-      title: "Surat Perjanjian Sewa-Menyewa",
-      slug: "surat-perjanjian-sewa",
-      description:
-        "Surat perjanjian untuk sewa-menyewa rumah/ruko/kontrakan",
-      content: `SURAT PERJANJIAN SEWA-MENYEWA
-
-Pada hari ini [HARI], tanggal [TANGGAL] bulan [BULAN] tahun [TAHUN], telah dibuat dan ditandatangani perjanjian oleh dan antara:
-
-PIHAK PERTAMA (Penyewa):
-Nama    : [NAMA_PENYEWA]
-Alamat  : [ALAMAT_PENYEWA]
-No. KTP : [NO_KTP_PENYEWA]
-
-PIHAK KEDUA (Pemilik):
-Nama    : [NAMA_PEMILIK]
-Alamat  : [ALAMAT_PEMILIK]
-No. KTP : [NO_KTP_PEMILIK]
-
-Dengan ini menyatakan bahwa:
-
-1. Pihak Kedua menyewakan kepada Pihak Pertama berupa [OBJEK_SEWA] yang beralamat di [ALAMAT_OBJEK_SEWA].
-
-2. Jangka waktu sewa adalah [LAMA_SEWA] terhitung sejak [TANGGAL_MULAI] sampai dengan [TANGGAL_AKHIR].
-
-3. Sewa sebesar Rp [NOMINAL_SEWA] ([TERBILANG]) dibayarkan [FREKUENSI_PEMBAYARAN].
-
-4. Uang jaminan sebesar Rp [NOMINAL_JAMINAN] yang akan dikembalikan setelah masa sewa berakhir dan tidak ada kerusakan.
-
-5. Pihak Pertama tidak diperkenankan menyewakan kembali tanpa izin tertulis dari Pihak Kedua.
-
-Demikian perjanjian ini dibuat dalam 2 (dua) rangkap bermeterai cukup dan masing-masing pihak menyimpan 1 (satu) rangkap.
-
-Pihak Pertama,               Pihak Kedua,
-[NAMA_PENYEWA]               [NAMA_PEMILIK]
-
-Materai Rp 10.000            Materai Rp 10.000`,
-      category: "Perjanjian",
-    },
-  ];
-
-  for (const template of templates) {
+  for (const template of templateSeeds) {
     await prisma.templateSurat.create({ data: template });
   }
 

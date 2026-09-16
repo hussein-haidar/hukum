@@ -2,6 +2,50 @@
 
 import { useState } from "react";
 
+function cleanMarkdown(raw: string): string {
+  const lines = raw.split("\n");
+  const output: string[] = [];
+  let counter = 0;
+
+  for (const line of lines) {
+    let l = line;
+
+    l = l.replace(/^#{1,6}\s*/, "");
+
+    l = l.replace(/\*\*(.*?)\*\*/g, "$1");
+    l = l.replace(/__(.*?)__/g, "$1");
+    l = l.replace(/\*(.*?)\*/g, "$1");
+    l = l.replace(/`(.*?)`/g, "$1");
+
+    const bullet = l.match(/^\s*(?:[-*•])\s+(.*)$/);
+    if (bullet) {
+      counter += 1;
+      output.push(`${counter}. ${bullet[1].trim()}`);
+      continue;
+    }
+
+    const numbered = l.match(/^\s*(\d+)[.)]\s+(.*)$/);
+    if (numbered) {
+      output.push(`${numbered[1]}. ${numbered[2].trim()}`);
+      continue;
+    }
+
+    const trimmed = l.trim();
+    if (!trimmed) {
+      output.push("");
+      counter = 0;
+      continue;
+    }
+
+    output.push(trimmed);
+  }
+
+  return output
+    .map((s) => s.replace(/[#*]+$/g, "").replace(/\s+/g, " ").trim())
+    .filter((s, i, arr) => !(s === "" && (i === 0 || arr[i - 1] === "")))
+    .join("\n");
+}
+
 export default function RingkasPage() {
   const [input, setInput] = useState("");
   const [hasil, setHasil] = useState("");
@@ -19,7 +63,7 @@ export default function RingkasPage() {
         body: JSON.stringify({ text: input.trim() }),
       });
       const data = await res.json();
-      setHasil(data.summary || "Gagal merangkum dokumen.");
+      setHasil(cleanMarkdown(data.summary || "Gagal merangkum dokumen."));
     } catch {
       setHasil("Gagal terhubung ke server. Silakan coba lagi.");
     } finally {
@@ -60,7 +104,7 @@ export default function RingkasPage() {
         {hasil && (
           <div className="card bg-teal-50 border border-teal-200">
             <h3 className="font-semibold text-teal-800 mb-2">Ringkasan:</h3>
-            <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">{hasil}</div>
+            <div className="text-gray-700 whitespace-pre-wrap leading-loose">{hasil}</div>
           </div>
         )}
 
