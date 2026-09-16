@@ -194,7 +194,7 @@ export default function DokumenPage() {
                   <p className="text-gray-600 mt-1">{doc.tentang}</p>
                 )}
                 <div className="flex flex-wrap gap-4 mt-3 text-sm">
-                  {doc.urlPdf && (
+                  {doc.urlPdf && /^https?:\/\//i.test(doc.urlPdf) && (
                     <a
                       href={doc.urlPdf}
                       target="_blank"
@@ -204,7 +204,7 @@ export default function DokumenPage() {
                       📄 Baca PDF
                     </a>
                   )}
-                  {doc.urlSumber && (
+                  {doc.urlSumber && /^https?:\/\//i.test(doc.urlSumber) && (
                     <a
                       href={doc.urlSumber}
                       target="_blank"

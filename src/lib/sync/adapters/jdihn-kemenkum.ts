@@ -40,6 +40,15 @@ function parseTanggal(v: unknown): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+// Feed sering berisi "-" atau teks kosong pada kolom URL. Hanya simpan URL
+// yang benar-benar valid (http/https) agar tidak muncul link rusak (404).
+function cleanUrl(v: unknown): string | null {
+  if (v == null) return null;
+  const s = String(v).trim();
+  if (!/^https?:\/\//i.test(s)) return null;
+  return s;
+}
+
 export const jdihnKemenkumAdapter: SourceAdapter = {
   id: "jdihn-kemenkum",
   name: "JDIHN (Kemenkumham Feed)",
@@ -87,8 +96,8 @@ export const jdihnKemenkumAdapter: SourceAdapter = {
       tentang: judul,
       status,
       tanggal,
-      urlSumber: it.urlDetailPeraturan || null,
-      urlPdf: it.urlDownload || null, // URL PDF langsung dari feed
+      urlSumber: cleanUrl(it.urlDetailPeraturan),
+      urlPdf: cleanUrl(it.urlDownload), // URL PDF langsung dari feed
       instansi: it.teuBadan || "Kementerian Hukum dan HAM",
     };
   },
