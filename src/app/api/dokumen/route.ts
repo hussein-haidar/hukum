@@ -36,6 +36,7 @@ export async function GET(req: Request) {
       prisma.legalDocument.groupBy({
         by: ["jenis"],
         _count: { id: true },
+        where: { jenis: { not: "" } },
         orderBy: { jenis: "asc" },
       }),
     ]);
