@@ -56,7 +56,9 @@ export default function DokumenPage() {
         if (data.success) {
           setDocuments(data.data);
           setMeta(data.meta);
-          setJenisList((data.jenisList as JenisCount[]).map((j) => j.jenis));
+          setJenisList(
+            (data.jenisList as JenisCount[]).map((j) => j.jenis).filter((j) => j.trim() !== "")
+          );
         } else {
           setError(data.message || "Gagal memuat data");
         }
