@@ -30,8 +30,12 @@ interface JenisCount {
 }
 
 export default function DokumenPage() {
+  const CAT_WINDOW = 8;
+  const CAT_INTERVAL_MS = 4000;
+
   const [documents, setDocuments] = useState<Dokumen[]>([]);
   const [jenisList, setJenisList] = useState<string[]>([]);
+  const [catStart, setCatStart] = useState(0);
   const [meta, setMeta] = useState<Meta>({ total: 0, page: 1, totalPages: 1 });
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -98,6 +102,35 @@ export default function DokumenPage() {
     setMeta((m) => ({ ...m, page: 1 }));
   };
 
+  // Jaga posisi window tetap valid saat daftar kategori berubah.
+  useEffect(() => {
+    if (jenisList.length <= CAT_WINDOW) setCatStart(0);
+  }, [jenisList.length, CAT_WINDOW]);
+
+  // Saat user memilih kategori, kunci window supaya pilihan tetap terlihat.
+  useEffect(() => {
+    if (jenis === "") return;
+    const idx = jenisList.indexOf(jenis);
+    if (idx === -1) return;
+    setCatStart(idx);
+  }, [jenis, jenisList]);
+
+  // Rotasi otomatis window kategori (berhenti saat ada kategori yang dipilih).
+  useEffect(() => {
+    if (jenis !== "" || jenisList.length <= CAT_WINDOW) return;
+    const t = setInterval(() => {
+      setCatStart((s) => (s + CAT_WINDOW) % jenisList.length);
+    }, CAT_INTERVAL_MS);
+    // Reset urutan begitu daftar berganti supaya mulai dari awal lagi.
+    setCatStart(0);
+    return () => clearInterval(t);
+  }, [jenis, jenisList, CAT_WINDOW, CAT_INTERVAL_MS]);
+
+  const visibleJenis = Array.from(
+    { length: Math.min(CAT_WINDOW, jenisList.length) },
+    (_, i) => jenisList[(catStart + i) % jenisList.length]
+  );
+
   const statusBadge = (status: string) => {
     const label = status === "berlaku" ? "Berlaku" : status === "dicabut" ? "Dicabut" : status;
     const cls =
@@ -137,7 +170,10 @@ export default function DokumenPage() {
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-8">
+      <div
+        className="flex flex-wrap gap-2 mb-8"
+        title="Kategori bergulir otomatis setiap beberapa detik"
+      >
         <button
           onClick={() => selectJenis("")}
           className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
@@ -146,7 +182,7 @@ export default function DokumenPage() {
         >
           Semua
         </button>
-        {jenisList.map((j) => (
+        {visibleJenis.map((j) => (
           <button
             key={j}
             onClick={() => selectJenis(j)}
