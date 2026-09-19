@@ -26,6 +26,17 @@ export default function AdminSyncPage() {
     "peraturan.go.id": "Peraturan.go.id",
     "jdihn": "JDIH Kemenkeu",
     "jdihn-kemenkum": "JDIH Kemenkumham",
+    // Hukum Islam
+    "lppom-mui": "LPPOM MUI (Fatwa MUI)",
+    "mui": "MUI (Fatwa)",
+    "jpi": "JPI",
+    "hukum-islam": "Hukum Islam (gabungan)",
+    // Hukum Internasional
+    "ohchr": "OHCHR UHRI (HAM)",
+    "un-documents": "UN Documents",
+    "un-treaty": "UN Treaty Collection",
+    "hukumonline-intl": "HukumOnline - Hukum Internasional",
+    "hukum-internasional": "Hukum Internasional (gabungan)",
   };
 
   const [status, setStatus] = useState<SyncStatus | null>(null);

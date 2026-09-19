@@ -111,22 +111,113 @@ function cleanUrlIntl(v: unknown): string | null {
   return s;
 }
 
-// Adapter UN Treaty Collection
+// UN Treaty Collection
+// Scraping halaman daftar per bab (Treaties.aspx?id={chapter}) karena tiap bab
+// berisi daftar traktat lengkap (judul, tanggal, mtdsg_no). Halaman ASP.NET
+// WebForms lambat -> pakai retry + jeda antar request.
+const TREATY_BASE = "https://treaties.un.org";
+const TREATY_CHAPTERS = Array.from({ length: 27 }, (_, i) => i + 1);
+
+function parseTreatyRows(html: string, chapter: number): Record<string, any>[] {
+  const rows: Record<string, any>[] = [];
+  // Setiap <tr> berisi <a href="ViewDetails.aspx?...&mtdsg_no=X-...">Judul</a>
+  const trRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  let tm: RegExpExecArray | null;
+  while ((tm = trRe.exec(html)) !== null) {
+    const rowHtml = tm[1];
+    if (!rowHtml.includes("ViewDetails.aspx")) continue;
+    const href = rowHtml.match(/ViewDetails\.aspx\?src=TREATY&amp;mtdsg_no=([^&"']+)/);
+    const titleMatch = rowHtml.match(/<a[^>]*>([\s\S]*?)<\/a>/);
+    if (!href || !titleMatch) continue;
+
+    const mtdsgNo = href[1].trim();
+    const judul = titleMatch[1]
+      .replace(/<[^>]*>/g, "")
+      .replace(/&amp;/g, "&")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!judul) continue;
+
+    // Tahun dari teks "New York, 16 December 1966" atau "(16 December 1966)"
+    const yearMatch = judul.match(/(19|20)\d{2}/);
+    // Tanggal lengkap
+    const dateMatch = judul.match(/\(?(\d{1,2}\s+\w+\s+(?:19|20)\d{2})\)?/);
+
+    rows.push({
+      mtdsg_no: mtdsgNo,
+      title: judul,
+      chapter,
+      year: yearMatch ? yearMatch[0] : "",
+      date: dateMatch ? dateMatch[1].trim() : "",
+      detail_url: `${TREATY_BASE}/Pages/ViewDetails.aspx?src=TREATY&mtdsg_no=${mtdsgNo}&chapter=${chapter}&clang=_en`,
+    });
+  }
+  return rows;
+}
+
+async function fetchTreatyChapter(
+  chapter: number,
+  retries = 2
+): Promise<Record<string, any>[]> {
+  const url = `${TREATY_BASE}/Pages/Treaties.aspx?id=${chapter}&subid=A&clang=_en`;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 HukumKu/1.0" },
+        signal: AbortSignal.timeout(25000),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const html = await res.text();
+      const rows = parseTreatyRows(html, chapter);
+      if (rows.length > 0) return rows;
+    } catch (e: any) {
+      if (attempt === retries) {
+        console.error(`[un-treaty] chapter ${chapter} error:`, e?.message);
+      }
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+  }
+  return [];
+}
+
 export const unTreatyAdapter: SourceAdapter = {
   id: "un-treaty",
   name: "UN Treaty Collection",
 
+  // Meng-crawl semua bab (1-27) dengan concurrency terbatas.
+  async fetchAll(): Promise<RawDocument[] | null> {
+    const all: Record<string, any>[] = [];
+    const CONCURRENCY = 3;
+    for (let i = 0; i < TREATY_CHAPTERS.length; i += CONCURRENCY) {
+      const batch = TREATY_CHAPTERS.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(batch.map((c) => fetchTreatyChapter(c)));
+      for (const rows of results) all.push(...rows);
+      // Jeda antar batch supaya tidak membanjiri server ASP.NET
+      if (i + CONCURRENCY < TREATY_CHAPTERS.length) {
+        await new Promise((r) => setTimeout(r, 1200));
+      }
+    }
+    return all.length > 0 ? all.map((r) => ({ externalId: r.mtdsg_no, raw: r })) : null;
+  },
+
   async fetchList(page: number, limit = 50): Promise<FetchResult> {
-    // TODO: UN Treaty Collection API
-    // https://treaties.un.org/Pages/AdvanceSearch.aspx
-    // Mungkin perlu scraping atau menggunakan UN Treaty Series API
-    
-    return { data: [], total: 0, page, totalPages: 1, hasMore: false };
+    const all = await this.fetchAll!();
+    if (!all) return { data: [], total: 0, page, totalPages: page, hasMore: false };
+    const start = (page - 1) * limit;
+    const data = all.slice(start, start + limit);
+    return {
+      data,
+      total: all.length,
+      page,
+      totalPages: Math.ceil(all.length / limit),
+      hasMore: start + limit < all.length,
+    };
   },
 
   normalize(raw: unknown): NormalizedDocument | null {
     const it = raw as Record<string, any>;
-    const id = it.id || it.registration_number || it.treaty_id;
+    const id = it.mtdsg_no || it.id || it.registration_number;
     const judul = it.title || it.treaty_title || "";
     if (!id || !judul) return null;
 
@@ -134,29 +225,103 @@ export const unTreatyAdapter: SourceAdapter = {
       source: "un-treaty",
       sourceId: `un-${id}`,
       jenis: mapJenisInternasional(it.type, judul, "UN"),
-      nomor: it.registration_number || it.unts_number || "",
+      nomor: id,
       tahun: String(it.year || it.conclusion_date?.slice(0, 4) || ""),
       judul,
       tentang: it.subject || it.summary || judul,
       status: it.status || "berlaku",
-      tanggal: parseTanggalIntl(it.conclusion_date || it.entry_into_force || it.registration_date),
-      urlSumber: cleanUrlIntl(it.url || `https://treaties.un.org/doc/Publication/UNTS/Volume%20${it.volume}/${id}.pdf`),
+      tanggal: parseTanggalIntl(it.date || it.conclusion_date || it.entry_into_force),
+      urlSumber: cleanUrlIntl(it.detail_url || it.url),
       urlPdf: cleanUrlIntl(it.pdf_url),
       instansi: "United Nations",
     };
   },
 };
 
-// Adapter HukumOnline Internasional
+// HukumOnline - Hukum Internasional
+// Tidak ada kategori /berita/internasional/ (404), jadi ambil daftar berita
+// umum lalu saring dengan kata kunci internasional. Berita list tersedia di
+// https://www.hukumonline.com/berita/?page=N
+const HOL_INTL_KEYWORDS = [
+  "internasional", "international", "pbb ", "un ", "asean", "wto", "oecd",
+  "icj", "icc", "perjanjian", "traktat", "konvensi", "ratifikasi", "global",
+  "negara asing", "asing", "luar negeri", "ekstradisi", "investasi asing",
+  "hukum laut", "unclos", "ius cogens", "diplomatik", "statuta roma",
+];
+
+const HOL_MAX_PAGES = 3;
+
+function extractHukBonlineArticles(html: string): Record<string, any>[] {
+  const items: Record<string, any>[] = [];
+  // Item berbentuk <a href="/berita/a/{slug}">Judul</a>
+  const linkRe = /<a[^>]*href="(\/berita\/a\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+  let lm: RegExpExecArray | null;
+  while ((lm = linkRe.exec(html)) !== null) {
+    const href = lm[1].trim();
+    const title = lm[2]
+      .replace(/<[^>]*>/g, "")
+      .replace(/\s+/g, " ")
+      .replace(/\s*\d{1,2}\s+(?:Jan|Feb|Mar|Apr|Mei|Jun|Jul|Agu|Sep|Okt|Nov|Des|\w+)\s+\d{4}$/i, "")
+      .trim();
+    if (!href || !title || title.length < 15) continue;
+    const slug = href.replace(/\/berita\/a\//, "").replace(/\/$/, "").split("?")[0];
+    items.push({ slug, title, url: HUKUMONLINE_BASE + href });
+  }
+  return items;
+}
+
+function isHolIntlArticle(it: Record<string, any>): boolean {
+  const text = ((it.title || "") + " " + (it.category || "")).toLowerCase();
+  for (const kw of HOL_INTL_KEYWORDS) {
+    if (text.includes(kw)) return true;
+  }
+  return false;
+}
+
 export const hukumOnlineIntlAdapter: SourceAdapter = {
   id: "hukumonline-intl",
   name: "HukumOnline - Hukum Internasional",
 
+  async fetchAll(): Promise<RawDocument[] | null> {
+    const seen = new Set<string>();
+    const all: Record<string, any>[] = [];
+    for (let page = 1; page <= HOL_MAX_PAGES; page++) {
+      try {
+        const res = await fetch(`${HUKUMONLINE_BASE}/berita/?page=${page}`, {
+          headers: { "User-Agent": "Mozilla/5.0 HukumKu/1.0" },
+          signal: AbortSignal.timeout(20000),
+        });
+        if (!res.ok) break;
+        const html = await res.text();
+        const items = extractHukBonlineArticles(html).filter(isHolIntlArticle);
+        for (const it of items) {
+          if (!seen.has(it.slug)) {
+            seen.add(it.slug);
+            all.push(it);
+          }
+        }
+        // Kalau ini halaman terakhir (tidak ada navigasi halaman berikutnya), berhenti
+        if (!/berita\/\?page=\d+/.test(html) || !html.includes(`page=${page + 1}`)) break;
+      } catch (e: any) {
+        console.error(`[hukumonline-intl] page ${page} error:`, e?.message);
+        break;
+      }
+    }
+    return all.length > 0 ? all.map((r) => ({ externalId: r.slug, raw: r })) : null;
+  },
+
   async fetchList(page: number, limit = 20): Promise<FetchResult> {
-    // TODO: HukumOnline API atau scraping
-    // Kategori: https://www.hukumonline.com/klinik/kategori/hukum-internasional/
-    
-    return { data: [], total: 0, page, totalPages: 1, hasMore: false };
+    const all = await this.fetchAll!();
+    if (!all) return { data: [], total: 0, page, totalPages: page, hasMore: false };
+    const start = (page - 1) * limit;
+    const data = all.slice(start, start + limit);
+    return {
+      data,
+      total: all.length,
+      page,
+      totalPages: Math.ceil(all.length / limit),
+      hasMore: start + limit < all.length,
+    };
   },
 
   normalize(raw: unknown): NormalizedDocument | null {
@@ -462,17 +627,41 @@ function extractBodyFromSymbol(symbol: string): string {
   return "United Nations";
 }
 
-// Adapter gabungan Hukum Internasional
+// Helper to get adapters (avoids TDZ issues)
+function getOhchrAdapter() { return ohchrAdapter; }
+function getUnDocsAdapter() { return unDocumentsAdapter; }
+
+// Adapter gabungan Hukum Internasional - combines OHCHR + UN Documents
 export const hukumInternasionalAdapter: SourceAdapter = {
   id: "hukum-internasional",
-  name: "Hukum Internasional (Gabungan)",
+  name: "Hukum Internasional (Gabungan: OHCHR + UN Documents)",
 
   async fetchAll(): Promise<RawDocument[] | null> {
-    // Bisa menggabungkan dari multiple sumber di atas
     return null;
   },
 
+  async fetchList(page: number, limit = 50): Promise<FetchResult> {
+    // Combine results from OHCHR and UN Documents
+    const halfLimit = Math.ceil(limit / 2);
+    const [ohchrResult, unDocsResult] = await Promise.all([
+      getOhchrAdapter().fetchList!(page, halfLimit),
+      getUnDocsAdapter().fetchList!(page, halfLimit),
+    ]);
+
+    const combinedData = [...ohchrResult.data, ...unDocsResult.data];
+    const total = ohchrResult.total + unDocsResult.total;
+    
+    return {
+      data: combinedData.slice(0, limit),
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      hasMore: combinedData.length >= limit,
+    };
+  },
+
   normalize(raw: unknown): NormalizedDocument | null {
-    return unTreatyAdapter.normalize(raw);
+    // Try OHCHR first, then UN Documents
+    return getOhchrAdapter().normalize(raw) || getUnDocsAdapter().normalize(raw);
   },
 };

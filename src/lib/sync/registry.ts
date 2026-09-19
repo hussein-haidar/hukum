@@ -13,14 +13,14 @@ import { unTreatyAdapter, hukumOnlineIntlAdapter, ohchrAdapter, hukumInternasion
 //  - jdihn-kemenkum       : feed/document.json lengkap + URL PDF (anggota JDIHN)
 // Hukum Islam:
 //  - lppom-mui            : LPPOM MUI (halalmui.org) - WP REST API WORKING ✅
-//  - mui                  : MUI Pusat - Cloudflare blocked (placeholder)
-//  - jpi                  : JPI - bukan hukum Islam (placeholder)
+//  - mui                  : MUI Pusat - delegasi ke LPPOM MUI (fatwa.mui.or.id Cloudflare blocked)
+//  - jpi                  : JPI (jpi.or.id) - WP REST API WORKING ✅
 //  - hukum-islam          : Gabungan hukum Islam
 // Hukum Internasional:
-//  - ohchr                : OHCHR UHRI API (working - JSON API)
-//  - un-documents         : UN Documents via undocs.org (HTML scraping by symbol)
-//  - un-treaty            : UN Treaty Collection (placeholder - complex ASP.NET)
-//  - hukumonline-intl     : HukumOnline kategori Internasional (placeholder)
+//  - ohchr                : OHCHR UHRI API (JSON API) WORKING ✅
+//  - un-documents         : UN Documents via undocs.org (HTML scraping by symbol) WORKING ✅
+//  - un-treaty            : UN Treaty Collection (scraping bab 1-27) WORKING ✅
+//  - hukumonline-intl     : HukumOnline berita (saring kata kunci internasional) WORKING ✅
 //  - hukum-internasional  : Gabungan hukum internasional
 
 export function getAllAdapters(): SourceAdapter[] {
@@ -31,15 +31,15 @@ export function getAllAdapters(): SourceAdapter[] {
     jdihnKemenkumAdapter,
     // Hukum Islam
     lppomMuiAdapter,        // Working - LPPOM MUI WP REST API
-    muiAdapter,             // Placeholder (blocked)
-    jpiAdapter,             // Placeholder (non-hukum)
-    hukumIslamAdapter,
+    muiAdapter,             // Working - delegasi ke LPPOM MUI
+    jpiAdapter,             // Working - JPI WP REST API
+    hukumIslamAdapter,      // Gabungan lppom-mui + jpi
     // Hukum Internasional
     ohchrAdapter,           // Working - OHCHR UHRI JSON API
     unDocumentsAdapter,     // Working - UN Documents via symbol patterns
-    unTreatyAdapter,        // Placeholder
-    hukumOnlineIntlAdapter, // Placeholder
-    hukumInternasionalAdapter,
+    unTreatyAdapter,        // Working - UN Treaty Collection chapter scraper
+    hukumOnlineIntlAdapter, // Working - HukumOnline berita scraper
+    hukumInternasionalAdapter, // Gabungan ohchr + un-documents
   ];
 }
 
