@@ -134,7 +134,35 @@ export const lppomMuiAdapter: SourceAdapter = {
       uniquePosts.sort((a, b) => new Date(b.date_gmt).getTime() - new Date(a.date_gmt).getTime());
 
       const pageOffset = (page - 1) * limit;
-      const data: RawDocument[] = uniquePosts.slice(0, limit).map((post) => ({
+      const pagePosts = uniquePosts.slice(0, limit);
+
+      // Ambil file PDF fatwa dari lampiran WP (media?parent={post}) supaya
+      // pengunjung bisa membuka dokumen aslinya. Dibatasi 5 per batch.
+      for (let i = 0; i < pagePosts.length; i += 5) {
+        await Promise.all(
+          pagePosts.slice(i, i + 5).map(async (post: any) => {
+            try {
+              const res = await fetch(
+                `${LPPOM_MUI_API}/media?parent=${post.id}&per_page=20`,
+                {
+                  headers: { "User-Agent": "Mozilla/5.0 HukumKu/1.0", Accept: "application/json" },
+                  signal: AbortSignal.timeout(20000),
+                }
+              );
+              if (!res.ok) return;
+              const media = (await res.json()) as any[];
+              const pdf = Array.isArray(media)
+                ? media.find((m) => m.mime_type === "application/pdf")
+                : null;
+              if (pdf?.source_url) post._pdfUrl = String(pdf.source_url);
+            } catch {
+              // PDF opsional, jangan gagalkan sinkronisasi
+            }
+          })
+        );
+      }
+
+      const data: RawDocument[] = pagePosts.map((post) => ({
         externalId: `lppom-${post.id}`,
         raw: post,
       }));
@@ -175,6 +203,7 @@ export const lppomMuiAdapter: SourceAdapter = {
     let pdfUrl: string | null = null;
     const pdfMatch = contentHtml.match(/href="([^"]+\.pdf)"/i);
     if (pdfMatch) pdfUrl = cleanUrlIslam(pdfMatch[1]);
+    if (!pdfUrl && (post as any)._pdfUrl) pdfUrl = cleanUrlIslam((post as any)._pdfUrl);
 
     return {
       source: "lppom-mui",
