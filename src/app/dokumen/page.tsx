@@ -83,8 +83,16 @@ export default function DokumenPage() {
     setSearch(searchInput);
   };
 
+  const handleRefresh = () => {
+    setSearchInput("");
+    setSearch("");
+    setJenis("");
+    setMeta((m) => ({ ...m, page: 1 }));
+  };
+
   const selectJenis = (j: string) => {
-    setJenis(j);
+    // Klik sekali = pilih, klik lagi = batalkan pilih (toggle)
+    setJenis(j === jenis ? "" : j);
     setMeta((m) => ({ ...m, page: 1 }));
   };
 
@@ -117,6 +125,13 @@ export default function DokumenPage() {
         />
         <button onClick={handleSearch} className="btn-primary flex-shrink-0">
           Cari
+        </button>
+        <button
+          onClick={handleRefresh}
+          className="btn-secondary flex-shrink-0"
+          title="Refresh / reset penelusuran"
+        >
+          ⟳
         </button>
       </div>
 
