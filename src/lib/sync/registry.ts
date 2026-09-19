@@ -3,6 +3,7 @@ import { jdihnAdapter } from "./adapters/jdihn";
 import { jdihnKemenkumAdapter } from "./adapters/jdihn-kemenkum";
 import { peraturanGoIdAdapter } from "./adapters/peraturan-go-id";
 import { lppomMuiAdapter, muiAdapter, jpiAdapter, hukumIslamAdapter } from "./adapters/hukum-islam";
+import { fatwaMuiAdapter } from "./adapters/fatwa-mui";
 import { unTreatyAdapter, hukumOnlineIntlAdapter, ohchrAdapter, hukumInternasionalAdapter, unDocumentsAdapter } from "./adapters/hukum-internasional";
 
 // Daftar semua sumber yang tersedia. Tambahkan adapter baru di sini.
@@ -15,6 +16,7 @@ import { unTreatyAdapter, hukumOnlineIntlAdapter, ohchrAdapter, hukumInternasion
 //  - lppom-mui            : LPPOM MUI (halalmui.org) - WP REST API WORKING ✅
 //  - mui                  : MUI Pusat - delegasi ke LPPOM MUI (fatwa.mui.or.id Cloudflare blocked)
 //  - jpi                  : JPI (jpi.or.id) - WP REST API WORKING ✅
+//  - fatwa-mui            : Fatwa MUI (fatwamui.com) - database fatwa lengkap + PDF WORKING ✅
 //  - hukum-islam          : Gabungan hukum Islam
 // Hukum Internasional:
 //  - ohchr                : OHCHR UHRI API (JSON API) WORKING ✅
@@ -33,6 +35,7 @@ export function getAllAdapters(): SourceAdapter[] {
     lppomMuiAdapter,        // Working - LPPOM MUI WP REST API
     muiAdapter,             // Working - delegasi ke LPPOM MUI
     jpiAdapter,             // Working - JPI WP REST API
+    fatwaMuiAdapter,        // Fatwa MUI (fatwamui.com) - scrape database fatwa lengkap
     hukumIslamAdapter,      // Gabungan lppom-mui + jpi
     // Hukum Internasional
     ohchrAdapter,           // Working - OHCHR UHRI JSON API
