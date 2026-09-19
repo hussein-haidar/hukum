@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import PdfReader from "@/components/PdfReader";
 
 interface Dokumen {
   id: number;
@@ -37,6 +38,7 @@ export default function DokumenPage() {
   const [jenis, setJenis] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [readerDoc, setReaderDoc] = useState<Dokumen | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -212,14 +214,12 @@ export default function DokumenPage() {
                 )}
                 <div className="flex flex-wrap gap-4 mt-3 text-sm">
                   {doc.urlPdf && /^https?:\/\//i.test(doc.urlPdf) && (
-                    <a
-                      href={doc.urlPdf}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline font-medium"
+                    <button
+                      onClick={() => setReaderDoc(doc)}
+                      className="text-blue-600 hover:underline font-medium text-left"
                     >
                       📄 Baca PDF
-                    </a>
+                    </button>
                   )}
                   {doc.urlSumber && /^https?:\/\//i.test(doc.urlSumber) && (
                     <a
@@ -259,6 +259,13 @@ export default function DokumenPage() {
             </div>
           )}
         </>
+      )}
+      {readerDoc && (
+        <PdfReader
+          docId={readerDoc.id}
+          title={readerDoc.judul}
+          onClose={() => setReaderDoc(null)}
+        />
       )}
     </div>
   );
