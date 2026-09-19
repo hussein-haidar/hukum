@@ -11,7 +11,6 @@ import { SourceAdapter, FetchResult, RawDocument, NormalizedDocument } from "../
 // 8. WIPO - hukum kekayaan intelektual internasional
 
 const UNDOCS_BASE = "https://undocs.org";
-const UN_DOCS_BASE = "https://documents.un.org";
 const UN_TREATY_BASE = "https://treaties.un.org";
 const HUKUMONLINE_BASE = "https://www.hukumonline.com";
 const OHCHR_BASE = "https://www.ohchr.org";
@@ -109,6 +108,13 @@ function cleanUrlIntl(v: unknown): string | null {
   const s = String(v).trim();
   if (!/^https?:\/\//i.test(s)) return null;
   return s;
+}
+
+// URL akses PDF resmi UN (undocs.org embed ke endpoint ini).
+// Pola lama documents.un.org/doc/undoc/gen/... sering 404/HTML, jadi
+// pakai /api/symbol/access yang menjamin response application/pdf.
+function unPdfAccessUrl(symbol: string): string {
+  return `https://documents.un.org/api/symbol/access?s=${encodeURIComponent(symbol)}&l=en&t=pdf`;
 }
 
 // UN Treaty Collection
@@ -476,7 +482,7 @@ export const unDocumentsAdapter: SourceAdapter = {
       status: "berlaku",
       tanggal: parseTanggalIntl(it.date || it.publication_date),
       urlSumber: cleanUrlIntl(it.url || `${UNDOCS_BASE}/en/${symbol.replace(/\//g, "/")}`),
-      urlPdf: cleanUrlIntl(it.pdf_url || `${UN_DOCS_BASE}/doc/undoc/gen/${symbol.replace(/[\/\s]/g, "-")}.pdf`),
+      urlPdf: cleanUrlIntl(it.pdf_url) || unPdfAccessUrl(symbol),
       instansi: it.body || "United Nations",
     };
   },
@@ -574,9 +580,13 @@ function parseUnDocumentHtml(html: string, symbol: string): Record<string, any> 
                        html.match(/<p[^>]*class="summary"[^>]*>([^<]+)</i);
   const summary = summaryMatch ? summaryMatch[1].trim() : "";
   
-  // Extract PDF link
-  const pdfMatch = html.match(/href="([^"]+\.pdf)"/i);
-  const pdfUrl = pdfMatch ? (pdfMatch[1].startsWith("http") ? pdfMatch[1] : `${UNDOCS_BASE}${pdfMatch[1]}`) : null;
+  // Extract PDF link (utamakan endpoint akses resmi yang dipakai undocs.org)
+  const accessMatch = html.match(/src="(https:\/\/documents\.un\.org\/api\/symbol\/access\?[^"]+)"/i);
+  let pdfUrl: string | null = accessMatch ? accessMatch[1].replace(/&amp;/g, "&") : null;
+  if (!pdfUrl) {
+    const pdfMatch = html.match(/href="([^"]+\.pdf)"/i);
+    if (pdfMatch) pdfUrl = pdfMatch[1].startsWith("http") ? pdfMatch[1] : `${UNDOCS_BASE}${pdfMatch[1]}`;
+  }
   
   // Extract year from symbol
   const year = extractYearFromSymbol(symbol);
