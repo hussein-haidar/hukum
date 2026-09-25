@@ -93,10 +93,55 @@ function cleanMarkdown(text: string): string {
     .trim();
 }
 
+const ACADEMIC_KEYWORDS = [
+  "artikel",
+  "jurnal",
+  "karya tulis",
+  "kajian",
+  "penelitian",
+  "kliping",
+  "majalah",
+  "koran",
+  "buku",
+  "makalah",
+  "naskah akademik",
+  "pengkajian",
+  "himpunan",
+  "analisis dan evaluasi",
+  "ilmiah",
+];
+
+function isAcademicJenis(jenis: string): boolean {
+  const lower = (jenis || "").toLowerCase();
+  return ACADEMIC_KEYWORDS.some((k) => lower.includes(k));
+}
+
+function isFatwaJenis(jenis: string): boolean {
+  return (jenis || "").toLowerCase().includes("fatwa");
+}
+
+function formatDocNumber(d: { jenis: string; nomor: string; tahun: string }): string {
+  return d.nomor.trim()
+    ? `${d.jenis} No. ${d.nomor}/${d.tahun}`
+    : `${d.jenis} Tahun ${d.tahun}`;
+}
+
+function docNote(d: any): string {
+  if (isFatwaJenis(d.jenis)) {
+    return " (Fatwa MUI - pendapat ulama, bukan peraturan negara yang mengikat)";
+  }
+  if (isAcademicJenis(d.jenis)) {
+    return " (artikel/naskah akademis - pandangan, bukan peraturan yang mengikat)";
+  }
+  return "";
+}
+
 function formatSources(docs: any[]): string {
   return docs
     .map((d, i) => {
-      let line = `${i + 1}. ${d.jenis} No. ${d.nomor}/${d.tahun} - ${d.judul}`;
+      let line = `${i + 1}. ${formatDocNumber(d)} - ${d.judul}`;
+      const note = docNote(d);
+      if (note) line += note;
       if (d.tentang) line += `\n   Tentang: ${d.tentang}`;
       line += `\n   Status: ${d.status}`;
       if (d.urlSumber) line += `\n   Sumber: ${d.urlSumber}`;
@@ -120,7 +165,6 @@ const REGULATION_TYPES = [
   "surat edaran",
   "rancangan peraturan perundang-undangan",
   "instrumen hukum internasional",
-  "naskah akademik",
 ];
 
 function isRegulation(jenis: string): boolean {
@@ -160,7 +204,9 @@ function scoreDocument(doc: any, words: string[]): number {
     }
   }
   if (hits === 0) return -100;
-  if (isRegulation(lowerJenis)) score += 4;
+  if (isAcademicJenis(lowerJenis)) score -= 20;
+  else if (isRegulation(lowerJenis)) score += 4;
+  else if (isFatwaJenis(lowerJenis)) score += 1;
   else score -= 3;
   return score;
 }
@@ -231,14 +277,23 @@ export async function POST(req: Request) {
 
         const scored = docs.map((d) => ({ doc: d, score: scoreDocument(d, words) }));
 
-        const topDocs = scored
-          .filter((s) => s.score >= 2)
+        // Prioritas tinggi: peraturan yang berlaku (+ fatwa sebagai pelengkap).
+        const mainDocs = scored
+          .filter((s) => s.score >= 2 && !isAcademicJenis(s.doc.jenis))
           .sort((a, b) => {
             const hb = hierarchyWeight(b.doc.jenis) - hierarchyWeight(a.doc.jenis);
             if (hb !== 0) return hb;
             return b.score - a.score;
           })
           .slice(0, 5);
+
+        // Cadangan: artikel/naskah akademis, hanya bila tidak ada peraturan.
+        const academicDocs = scored
+          .filter((s) => s.score >= 2 && isAcademicJenis(s.doc.jenis))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3);
+
+        const topDocs = mainDocs.length > 0 ? mainDocs : academicDocs;
 
         if (topDocs.length > 0) {
           sourceDocs = topDocs.map((s) => s.doc);
@@ -247,7 +302,7 @@ export async function POST(req: Request) {
             topDocs
               .map(
                 (s, i) =>
-                  `${i + 1}. ${s.doc.jenis} No. ${s.doc.nomor}/${s.doc.tahun}\n   Judul: ${s.doc.judul}\n   Tentang: ${s.doc.tentang || "-"}\n   Status: ${s.doc.status}`
+                  `${i + 1}. ${formatDocNumber(s.doc)}${docNote(s.doc)}\n   Judul: ${s.doc.judul}\n   Tentang: ${s.doc.tentang || "-"}\n   Status: ${s.doc.status}`
               )
               .join("\n");
         }
@@ -275,12 +330,16 @@ export async function POST(req: Request) {
 Instruksi:
 1. Jawab pertanyaan pengguna secara langsung, jelas, dan spesifik sesuai topik yang ditanyakan.
 2. Gunakan pengetahuan umum hukum Indonesia yang kamu miliki; data FAQ dan peraturan di bawah hanya referensi tambahan.
-3. Jika ada data peraturan relevan di bawah, gunakan sebagai dasar jawaban. Sebutkan nomor undang-undang atau pasal HANYA jika benar dan sesuai data di bawah; jika tidak yakin, jangan mengarang nomor pasal atau nomor UU - cukup jelaskan prinsip hukumnya secara umum.
-4. JANGAN membuat daftar peraturan/sumber di akhir jawaban, karena daftar sumber akan ditambahkan otomatis oleh sistem.
-5. Jika kasus membutuhkan analisis mendalam, berikan penjelasan umum dulu lalu sarankan konsultasi advokat.
-6. Gunakan bahasa Indonesia yang sederhana dan mudah dipahami, tanpa simbol markdown.
-7. Gunakan huruf dan tanda baca standar (ASCII): tanda hubung biasa "-", tanda kutip biasa '"' dan "'", angka dan spasi normal. JANGAN gunakan en-dash, em-dash, tanda kutip keriting, atau karakter Unicode khusus lainnya.
-8. Akhiri dengan disclaimer: "Jawaban AI bersifat informatif dan bukan pengganti konsultasi hukum profesional."
+3. Bedakan dengan tegas antara:
+   - PERATURAN yang berlaku dan mengikat (UU, PP, Perpres, Perda, dst.).
+   - PENDAPAT/pandangan yang TIDAK mengikat: Fatwa MUI, artikel, jurnal, naskah akademik, dan tulisan akademis lainnya. Jika data referensi di bawah bertanda "(Fatwa MUI...)" atau "(artikel/naskah akademis...)", sebut hanya sebagai pendapat, JANGAN pernah menyajikannya sebagai aturan resmi yang berlaku.
+4. Sebutkan nomor undang-undang atau pasal HANYA jika benar dan sesuai data di bawah; jika tidak yakin, jangan mengarang nomor pasal atau nomor UU - cukup jelaskan prinsip hukumnya secara umum.
+5. FATAL JIKA MELANGGAR (PERCERAIAN/TALAK): Dalam hukum Indonesia, perceraian - termasuk talak oleh suami - HANYA sah apabila dinyatakan dan diputuskan di dalam sidang pengadilan yang berwenang. Pengadilan Agama untuk pasangan muslim (suami mengucapkan talak di hadapan sidang, sesuai UU No. 1 Tahun 1974 tentang Perkawinan jo. KHI), dan Pengadilan Negeri untuk pasangan non-muslim. JANGAN PERNAH menyatakan bahwa perceraian atau talak dapat dilakukan tanpa sidang pengadilan. Perceraian tanpa putusan pengadilan tidak diakui sah secara hukum di Indonesia.
+6. JANGAN membuat daftar peraturan/sumber di akhir jawaban, karena daftar sumber akan ditambahkan otomatis oleh sistem.
+7. Jika kasus membutuhkan analisis mendalam, berikan penjelasan umum dulu lalu sarankan konsultasi advokat.
+8. Gunakan bahasa Indonesia yang sederhana dan mudah dipahami, tanpa simbol markdown (jangan gunakan **, *, #, dst).
+9. Gunakan huruf dan tanda baca standar (ASCII): tanda hubung biasa "-", tanda kutip biasa '"' dan "'", angka dan spasi normal. JANGAN gunakan en-dash, em-dash, tanda kutip keriting, atau karakter Unicode khusus lainnya.
+10. Akhiri dengan disclaimer: "Jawaban AI bersifat informatif dan bukan pengganti konsultasi hukum profesional."
 
 Data FAQ:
 ${faqContext}

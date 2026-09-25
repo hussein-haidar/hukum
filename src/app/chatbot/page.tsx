@@ -7,6 +7,29 @@ interface Message {
   content: string;
 }
 
+function Linkified({ text }: { text: string }) {
+  const parts = text.split(/(https?:\/\/[^\s]+)/g);
+  return (
+    <>
+      {parts.map((part, i) =>
+        /^https?:\/\//i.test(part) ? (
+          <a
+            key={i}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline break-all text-blue-700 hover:text-blue-800"
+          >
+            {part}
+          </a>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+}
+
 export default function ChatbotPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -17,11 +40,12 @@ export default function ChatbotPage() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, [messages, loading]);
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
@@ -58,7 +82,7 @@ export default function ChatbotPage() {
       <p className="text-gray-600 mb-6">Tanyakan pertanyaan hukum, dapatkan jawaban dari AI</p>
 
       <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-        <div className="h-[500px] overflow-y-auto p-4 space-y-4">
+        <div ref={scrollRef} className="h-[500px] overflow-y-auto p-4 space-y-4">
           {messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
               <div
@@ -68,7 +92,9 @@ export default function ChatbotPage() {
                     : "bg-gray-100 text-gray-800 rounded-bl-md"
                 }`}
               >
-                <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
+                <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                  <Linkified text={msg.content} />
+                </p>
               </div>
             </div>
           ))}
@@ -83,7 +109,6 @@ export default function ChatbotPage() {
               </div>
             </div>
           )}
-          <div ref={messagesEndRef} />
         </div>
 
         <div className="border-t border-gray-200 p-4">
