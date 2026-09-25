@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { FAQ_CATEGORIES } from "@/lib/faq-data";
 
 interface FAQ {
   id: number;
@@ -61,7 +62,7 @@ export default function AdminFAQPage() {
           <input placeholder="Pertanyaan" value={form.question} onChange={(e) => setForm({ ...form, question: e.target.value })} className="input-field" />
           <textarea placeholder="Jawaban" value={form.answer} onChange={(e) => setForm({ ...form, answer: e.target.value })} className="input-field" rows={4} />
           <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="input-field">
-            {["Perdata", "Pidana", "Keluarga", "Ketenagakerjaan", "Properti", "Umum"].map((c) => (
+            {FAQ_CATEGORIES.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>

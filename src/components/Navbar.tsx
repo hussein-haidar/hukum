@@ -1,10 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [templateVisible, setTemplateVisible] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => setTemplateVisible(!!d.templateSuratVisible))
+      .catch(() => {});
+  }, []);
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
@@ -24,12 +32,14 @@ export default function Navbar() {
             >
               FAQ Hukum
             </Link>
-            <Link
-              href="/template-surat"
-              className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50"
-            >
-              Template Surat
-            </Link>
+            {templateVisible && (
+              <Link
+                href="/template-surat"
+                className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50"
+              >
+                Template Surat
+              </Link>
+            )}
             <Link
               href="/kalkulator"
               className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50"
@@ -104,7 +114,9 @@ export default function Navbar() {
         <div className="md:hidden border-t border-gray-200 bg-white">
           <div className="px-4 py-3 space-y-1">
             <Link href="/faq" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>FAQ Hukum</Link>
-            <Link href="/template-surat" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>Template Surat</Link>
+            {templateVisible && (
+              <Link href="/template-surat" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>Template Surat</Link>
+            )}
             <Link href="/kalkulator" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>Kalkulator</Link>
             <Link href="/dokumen" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>Peraturan</Link>
             <Link href="/glosarium" className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-blue-50" onClick={() => setIsOpen(false)}>Glosarium</Link>

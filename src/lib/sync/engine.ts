@@ -51,6 +51,19 @@ function sanitizeNormalized(n: NormalizedDocument | null): NormalizedDocument | 
   return n;
 }
 
+// Panen istilah glosarium dari dokumen yang baru diproses (best-effort).
+async function harvestFromNormalized(normalized: NormalizedDocument[]) {
+  try {
+    const { harvestGlossaryFromDocs } = await import("./glosarium");
+    const inserted = await harvestGlossaryFromDocs(
+      normalized.map((n) => ({ judul: n.judul, tentang: n.tentang, fullText: n.fullText }))
+    );
+    if (inserted > 0) console.log(`[glosarium] ${inserted} istilah baru ditambahkan.`);
+  } catch {
+    // kegagalan panen glosarium tidak boleh menggagalkan sync
+  }
+}
+
 async function runAdapterSync(adapter: SourceAdapter): Promise<SyncResult> {
   const start = Date.now();
   let documentsNew = 0;
@@ -116,6 +129,7 @@ async function runAdapterSync(adapter: SourceAdapter): Promise<SyncResult> {
         documentsUpdated += updated;
         await markProcessed(adapter.id);
         await setLastFingerprint(adapter.id, fileHash);
+        await harvestFromNormalized(normalized);
         return finish(
           documentsFailed > 0 && documentsNew === 0 ? "partial" : "success",
           false,
@@ -237,6 +251,7 @@ async function runAdapterSync(adapter: SourceAdapter): Promise<SyncResult> {
 
     await markProcessed(adapter.id);
     await setLastFingerprint(adapter.id, fingerprint);
+    await harvestFromNormalized(normalized);
 
     const status: SyncResult["status"] =
       documentsNew === 0 && documentsUpdated === 0 && documentsFailed > 0

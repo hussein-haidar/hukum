@@ -1,4 +1,17 @@
+"use client";
+
+import { useState, useEffect } from "react";
+
 export default function Footer() {
+  const [templateVisible, setTemplateVisible] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => setTemplateVisible(!!d.templateSuratVisible))
+      .catch(() => {});
+  }, []);
+
   return (
     <footer className="bg-gray-800 text-gray-300">
       <div className="max-w-7xl mx-auto px-4 py-10">
@@ -17,7 +30,9 @@ export default function Footer() {
             <h3 className="text-white font-semibold mb-3">Fitur</h3>
             <ul className="space-y-2 text-sm">
               <li><a href="/faq" className="hover:text-white">FAQ Hukum</a></li>
-              <li><a href="/template-surat" className="hover:text-white">Template Surat</a></li>
+              {templateVisible && (
+                <li><a href="/template-surat" className="hover:text-white">Template Surat</a></li>
+              )}
               <li><a href="/kalkulator" className="hover:text-white">Kalkulator Hukum</a></li>
               <li><a href="/glosarium" className="hover:text-white">Glosarium</a></li>
               <li><a href="/bantuan-hukum" className="hover:text-white">Bantuan Hukum</a></li>

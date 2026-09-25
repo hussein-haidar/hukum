@@ -89,6 +89,19 @@ export default function DokumenPage() {
     setSearch(searchInput);
   };
 
+  // Live search-as-you-type: teks yang diketik otomatis dijadikan filter
+  // setelah berhenti mengetik sebentar (debounce). Sekaligus memperbaiki bug
+  // "bukan klik cari lalu pilih kategori jadi kosong" karena teks di kotak kini
+  // selalu sinkron dengan state `search` (tidak ada sisa pencarian lama).
+  useEffect(() => {
+    if (searchInput === search) return;
+    const t = setTimeout(() => {
+      setSearch(searchInput);
+      setMeta((m) => ({ ...m, page: 1 }));
+    }, 600);
+    return () => clearTimeout(t);
+  }, [searchInput, search]);
+
   const handleRefresh = () => {
     setSearchInput("");
     setSearch("");
@@ -99,6 +112,8 @@ export default function DokumenPage() {
   const selectJenis = (j: string) => {
     // Klik sekali = pilih, klik lagi = batalkan pilih (toggle)
     setJenis(j === jenis ? "" : j);
+    // Komit teks yang sedang diketik supaya hasil selalu konsisten dengan filter.
+    if (searchInput !== search) setSearch(searchInput);
     setMeta((m) => ({ ...m, page: 1 }));
   };
 
@@ -222,10 +237,19 @@ export default function DokumenPage() {
           <div className="text-5xl mb-4">📭</div>
           <h2 className="text-xl font-bold mb-2">Belum Ada Peraturan</h2>
           <p className="text-gray-600">
-            {search || jenis
-              ? "Tidak ada peraturan yang cocok dengan pencarian Anda. Coba kata kunci lain."
+            {search && jenis
+              ? `Tidak ada peraturan dengan kata kunci "${search}" pada kategori ${jenis}.`
+              : search
+              ? `Tidak ada peraturan yang cocok dengan kata kunci "${search}".`
+              : jenis
+              ? `Tidak ada peraturan pada kategori ${jenis}.`
               : "Database peraturan masih kosong. Jalankan Data Sync melalui panel admin untuk mengambil peraturan dari sumber resmi."}
           </p>
+          {(search || jenis) && (
+            <button onClick={handleRefresh} className="mt-6 btn-secondary">
+              Reset Pencarian
+            </button>
+          )}
         </div>
       ) : (
         <>

@@ -1,89 +1,12 @@
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
-import { templateSeeds } from "./templateSeeds";
-import { EXTRA_FAQS } from "../src/lib/faq-data";
-
-const prisma = new PrismaClient();
-
+// Reset tabel glosarium ke isi awal (seed) lalu biarkan backfill menambahkan
+// istilah dari dokumen. Dipakai sekali untuk memperbaiki akronim yang salah
+// ditulis (Uu, Pbb, dst). Jalankan: npx tsx scripts/reset-glossary.ts
 async function main() {
-  await prisma.fAQ.deleteMany();
-  await prisma.templateSurat.deleteMany();
-  await prisma.glosarium.deleteMany();
-  await prisma.admin.deleteMany();
+  const { prisma } = await import("../src/lib/prisma");
 
-  const hashedPassword = await bcrypt.hash("admin123", 10);
-  await prisma.admin.create({
-    data: {
-      username: "admin",
-      email: "admin@hukumku.com",
-      password: hashedPassword,
-    },
-  });
+  await prisma.glosarium.deleteMany({});
 
-  const faqs = [
-    {
-      question: "Apa itu pengaduan di pengadilan?",
-      answer:
-        "Pengaduan adalah laporan yang diajukan oleh seseorang kepada pengadilan terkait adanya dugaan pelanggaran hukum yang merugikan dirinya. Pengaduan dapat diajukan secara tertulis atau lisan ke Pengadilan Negeri setempat.",
-      category: "Perdata",
-    },
-    {
-      question: "Bagaimana cara mengurus perceraian?",
-      answer:
-        "Perceraian dapat diajukan ke Pengadilan Agama (bagi muslim) atau Pengadilan Negeri (bagi non-muslim). Dokumen yang diperlukan: surat nikah, KTP, Kartu Keluarga, akta lahir anak (jika ada), dan surat gugatan cerai. Biaya perkara ditanggung oleh pihak yang mengajukan.",
-      category: "Keluarga",
-    },
-    {
-      question: "Apa hak karyawan saat di-PHK?",
-      answer:
-        "Berdasarkan UU Ketenagakerjaan No. 13 Tahun 2003, karyawan yang di-PHK berhak menerima: uang pesangon, uang penggantian hak, dan uang penghargaan masa kerja. Besaran tergantung lama kerja dan alasan PHK.",
-      category: "Ketenagakerjaan",
-    },
-    {
-      question: "Bagaimana cara membuat surat kuasa hukum?",
-      answer:
-        "Surat kuasa hukum dibuat secara tertulis, mencantumkan identitas pemberi kuasa dan penerima kuasa, ruang lingkup kuasa, dan tanda tangan kedua belah pihak serta saksi. Surat kuasa harus dibubuhi materai Rp 10.000.",
-      category: "Umum",
-    },
-    {
-      question: "Apa itu alibi dalam hukum pidana?",
-      answer:
-        "Alibi adalah keterangan yang menyatakan bahwa terdakwa tidak berada di tempat kejadian perkara (TKP) pada saat tindak pidana terjadi. Alibi dapat menjadi alasan pembebasan dari tuduhan pidana jika dapat dibuktikan.",
-      category: "Pidana",
-    },
-    {
-      question: "Berapa lama masa berlaku SIM?",
-      answer:
-        "SIM A dan SIM C berlaku selama 5 tahun sejak diterbitkan. Setelah masa berlaku habis, harus diperpanjang. Jika tidak diperpanjang dalam waktu 2 tahun setelah masa berlaku habis, SIM harus dibuat baru.",
-      category: "Umum",
-    },
-    {
-      question: "Bagaimana cara mengurus sertifikat tanah?",
-      answer:
-        "Untuk mengurus sertifikat tanah (PTSL atau pendaftaran tanah biasa), persiapkan: surat kepemilikan tanah (letter C/girik), KTP, PBB terakhir, surat pengantar RT/RW, dan foto bangunan. Ajukan ke Kantor Pertanahan (BPN) setempat.",
-      category: "Properti",
-    },
-    {
-      question: "Apa itu syarat sah perjanjian dalam KUHPerdata?",
-      answer:
-        "Berdasarkan Pasal 1320 KUHPerdata, syarat sah perjanjian adalah: 1) Kesepakatan mereka yang mengikatkan diri, 2) Kecakapan untuk membuat perjanjian, 3) Suatu hal tertentu, 4) Suatu sebab yang halal.",
-      category: "Perdata",
-    },
-  ];
-
-  for (const faq of faqs) {
-    await prisma.fAQ.create({ data: faq });
-  }
-
-  for (const faq of EXTRA_FAQS) {
-    await prisma.fAQ.create({ data: faq });
-  }
-
-  for (const template of templateSeeds) {
-    await prisma.templateSurat.create({ data: template });
-  }
-
-  const glossaries = [
+  const seed = [
     { term: "Advokat", definition: "Orang yang berprofesi memberikan bantuan hukum, baik di dalam maupun di luar pengadilan, yang telah memenuhi syarat berdasarkan ketentuan Undang-Undang Advokat.", letter: "A" },
     { term: "Alibi", definition: "Keterangan yang menyatakan bahwa seseorang tidak berada di tempat kejadian perkara pada saat tindak pidana terjadi.", letter: "A" },
     { term: "Berkas Perkara", definition: "Kumpulan dokumen yang berisi surat-surat dan bukti-bukti yang berkaitan dengan suatu perkara di pengadilan.", letter: "B" },
@@ -111,18 +34,19 @@ async function main() {
     { term: "Zaman Peninjauan", definition: "Masa atau periode hukum yang mengalami perubahan dan peninjauan terhadap peraturan yang berlaku.", letter: "Z" },
   ];
 
-  for (const glossary of glossaries) {
-    await prisma.glosarium.create({ data: glossary });
+  for (const g of seed) {
+    await prisma.glosarium.create({ data: g });
   }
 
-  console.log("Seed data berhasil ditambahkan!");
+  console.log(`Glosarium di-reset: ${seed.length} istilah awal dimasukkan.`);
+  await prisma.$disconnect();
 }
 
 main()
+  .then(() => process.exit(0))
   .catch((e) => {
     console.error(e);
     process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
   });
+
+export {};
