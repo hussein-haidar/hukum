@@ -198,42 +198,102 @@ export default function DokumenPage() {
         </button>
       </div>
 
-      {/* Petunjuk pencarian hukum Islam */}
+      {/* Petunjuk pencarian hukum */}
       <details className="mb-4 group">
         <summary className="cursor-pointer text-sm text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 flex items-center gap-1.5 select-none list-none p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
           <span className="text-base">💡</span>
-          <span className="font-medium">Petunjuk pencarian hukum Islam</span>
+          <span className="font-medium">Petunjuk pencarian hukum</span>
           <span className="inline-block ml-auto transition-transform group-open:rotate-90 text-gray-500 dark:text-gray-400">▸</span>
         </summary>
-        <div className="mt-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 text-sm text-gray-700 dark:text-gray-300 space-y-2">
-          <p className="font-medium text-blue-900 dark:text-blue-100">Istilah umum → Istilah database:</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2 text-xs">
-            <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-100 dark:border-blue-800">
-              <span className="font-medium text-gray-900 dark:text-gray-100">cerai islam</span>
-              <span className="text-gray-600 dark:text-gray-400 ml-1">→ perceraian, talak</span>
-            </div>
-            <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-100 dark:border-blue-800">
-              <span className="font-medium text-gray-900 dark:text-gray-100">talak islam</span>
-              <span className="text-gray-600 dark:text-gray-400 ml-1">→ talak, perceraian, khulu'</span>
-            </div>
-            <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-100 dark:border-blue-800">
-              <span className="font-medium text-gray-900 dark:text-gray-100">nikah islam</span>
-              <span className="text-gray-600 dark:text-gray-400 ml-1">→ nikah, pernikahan, kawin</span>
-            </div>
-            <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-100 dark:border-blue-800">
-              <span className="font-medium text-gray-900 dark:text-gray-100">aqiqah</span>
-              <span className="text-gray-600 dark:text-gray-400 ml-1">→ aqiqah (jika ada)</span>
-            </div>
-            <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-100 dark:border-blue-800">
-              <span className="font-medium text-gray-900 dark:text-gray-100">nafkah mantan istri</span>
-              <span className="text-gray-600 dark:text-gray-400 ml-1">→ nafkah iddah, mut'ah</span>
-            </div>
-            <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-100 dark:border-blue-800">
-              <span className="font-medium text-gray-900 dark:text-gray-100">hak asuh anak</span>
-              <span className="text-gray-600 dark:text-gray-400 ml-1">→ hak asuh anak, khadhanah</span>
+        <div className="mt-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 text-sm text-gray-700 dark:text-gray-300 space-y-3">
+          <div>
+            <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">🕌 Hukum Islam (KHI, Fatwa MUI):</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2 text-xs">
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-100 dark:border-blue-800">
+                <span className="font-medium text-gray-900 dark:text-gray-100">cerai islam</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">→ perceraian, talak</span>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-100 dark:border-blue-800">
+                <span className="font-medium text-gray-900 dark:text-gray-100">talak islam</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">→ talak, perceraian, khulu'</span>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-100 dark:border-blue-800">
+                <span className="font-medium text-gray-900 dark:text-gray-100">nikah islam</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">→ nikah, pernikahan, kawin</span>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-100 dark:border-blue-800">
+                <span className="font-medium text-gray-900 dark:text-gray-100">waris islam</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">→ waris, khi, faraidh</span>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-100 dark:border-blue-800">
+                <span className="font-medium text-gray-900 dark:text-gray-100">nafkah mantan istri</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">→ nafkah iddah, mut'ah</span>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-100 dark:border-blue-800">
+                <span className="font-medium text-gray-900 dark:text-gray-100">hak asuh anak</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">→ hak asuh anak, khadhanah</span>
+              </div>
             </div>
           </div>
-          <p className="text-gray-600 dark:text-gray-400 text-xs mt-1">Ketik bebas, sistem akan memperluas ke istilah hukum yang sesuai.</p>
+          <div>
+            <p className="font-medium text-green-900 dark:text-green-100 mb-1">🌍 Hukum Internasional (PBB, OHCHR, Konvensi):</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2 text-xs">
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-green-100 dark:border-green-800">
+                <span className="font-medium text-gray-900 dark:text-gray-100">hukum internasional</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">→ international law, pbb</span>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-green-100 dark:border-green-800">
+                <span className="font-medium text-gray-900 dark:text-gray-100">konvensi</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">→ convention, treaty, perjanjian</span>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-green-100 dark:border-green-800">
+                <span className="font-medium text-gray-900 dark:text-gray-100">hak asasi manusia</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">→ human rights, ohchr, ham internasional</span>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-green-100 dark:border-green-800">
+                <span className="font-medium text-gray-900 dark:text-gray-100">hukum laut</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">→ unclos, law of the sea</span>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-green-100 dark:border-green-800">
+                <span className="font-medium text-gray-900 dark:text-gray-100">perdagangan internasional</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">→ wto, international trade</span>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-green-100 dark:border-green-800">
+                <span className="font-medium text-gray-900 dark:text-gray-100">hukum pidana internasional</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">→ icc, war crimes, genosida</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p className="font-medium text-amber-900 dark:text-amber-100 mb-1">🇮🇩 Hukum Indonesia (UU, KUHP, Peraturan):</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2 text-xs">
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-amber-100 dark:border-amber-800">
+                <span className="font-medium text-gray-900 dark:text-gray-100">hukum indonesia</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">→ uu, kuhp, kuhap, kuhperdata</span>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-amber-100 dark:border-amber-800">
+                <span className="font-medium text-gray-900 dark:text-gray-100">pidana / perdata</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">→ kuhp, kuhper, kuhap, gugatan</span>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-amber-100 dark:border-amber-800">
+                <span className="font-medium text-gray-900 dark:text-gray-100">ham indonesia</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">→ uu ham, komnas ham, mk</span>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-amber-100 dark:border-amber-800">
+                <span className="font-medium text-gray-900 dark:text-gray-100">tenaga kerja</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">→ phk, pesangon, serikat pekerja</span>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-amber-100 dark:border-amber-800">
+                <span className="font-medium text-gray-900 dark:text-gray-100">agrarria / tanah</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">→ hak atas tanah, sertifikat, bptn</span>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-amber-100 dark:border-amber-800">
+                <span className="font-medium text-gray-900 dark:text-gray-100">hki / kekayaan intelektual</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">→ paten, merk, hak cipta</span>
+              </div>
+            </div>
+          </div>
+          <p className="text-gray-600 dark:text-gray-400 text-xs mt-2">Ketik bebas, sistem akan memperluas ke istilah hukum yang sesuai.</p>
         </div>
       </details>
 
