@@ -206,15 +206,17 @@ return (
               {/* Canvas container - fills available space, safe-area aware */}
               <div
                 ref={containerRef}
-                className="flex-1 overflow-auto bg-gray-100 p-3 sm:p-4 pb-4 sm:pb-6 pb-safe-area flex justify-center items-start min-h-0"
+                className="flex-1 overflow-auto bg-gray-100 p-3 sm:p-4 pb-4 sm:pb-6 pb-safe-area min-h-0"
                 style={{
                   paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
                 } as React.CSSProperties}
               >
-                <canvas
-                  ref={canvasRef}
-                  className="shadow-lg rounded bg-white max-w-full"
-                />
+<div className="flex justify-center min-h-full">
+                  <canvas
+                    ref={canvasRef}
+                    className="shadow-lg rounded bg-white max-w-full"
+                  />
+                </div>
               </div>
 
 {/* Footer toolbar - fixed, no shrink, safe-area aware */}
@@ -275,7 +277,7 @@ return (
                     ⛶
                   </button>
                 </div>
-              </div>
+</div>
             </>
           )}
         </div>
@@ -283,5 +285,8 @@ return (
     </div>
   );
 }
+
+
+
 
 
