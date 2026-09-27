@@ -6,6 +6,16 @@ import { sanitizeText } from "@/lib/sanitize";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf/pdf.worker.min.js";
 
+// Styles for safe-area and touch scrolling
+const canvasContainerStyle: React.CSSProperties = {
+  paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+  WebkitOverflowScrolling: "touch",
+};
+
+const footerToolbarStyle: React.CSSProperties = {
+  paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
+};
+
 interface PdfReaderProps {
   docId: number;
   title: string;
@@ -72,7 +82,7 @@ export default function PdfReader({ docId, title, onClose, sumberUrl }: PdfReade
       const containerHeight = container.clientHeight;
       const scaleX = containerWidth / viewport.width;
       const scaleY = containerHeight / viewport.height;
-      const fitScale = Math.min(scaleX, scaleY) * 0.95; // 95% to leave small margin
+      const fitScale = Math.min(scaleX, scaleY) * 0.92;
       setZoom(Math.max(0.5, Math.min(fitScale, 3)));
     });
   }, [page, zoom]);
@@ -89,7 +99,6 @@ export default function PdfReader({ docId, title, onClose, sumberUrl }: PdfReade
         const containerWidth = container?.clientWidth || 600;
         const fit = containerWidth / base.width;
         const cssScale = fit * currentZoom;
-        // Higher DPR for sharper text (cap at 2 for performance)
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
         const maxDim = 8000;
         const safeDpr = Math.min(
@@ -139,6 +148,131 @@ export default function PdfReader({ docId, title, onClose, sumberUrl }: PdfReade
 
   const zoomDisplay = zoom === "auto" ? "Otomatis" : `${Math.round(Number(zoom) * 100)}%`;
 
+  // Render functions
+  const renderError = () => (
+    <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
+      <p className="text-sm text-red-600">⚠️ {error}</p>
+      <button
+        onClick={() => setReloadKey((k) => k + 1)}
+        className="btn-secondary"
+      >
+        ↻ Coba Lagi
+      </button>
+      <div className="flex flex-wrap justify-center gap-2">
+        <a
+          href={`/api/pdf?id=${docId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-primary"
+        >
+          📄 Buka PDF di tab baru
+        </a>
+        {sumberUrl && /^https?:\/\//i.test(sumberUrl) && (
+          <a
+            href={sumberUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary"
+          >
+            🔗 Buka Halaman Sumber
+          </a>
+        )}
+      </div>
+      <p className="text-xs text-gray-400">
+        Bila tetap gagal, kemungkinan server asal dokumen sedang
+        bermasalah. Anda tetap bisa membukanya lewat tombol di atas.
+      </p>
+    </div>
+  );
+
+  const renderLoading = () => (
+    <div className="flex h-full items-center justify-center text-sm text-gray-500">
+      <div className="flex items-center gap-2">
+        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+        Memuat dokumen...
+      </div>
+    </div>
+  );
+
+  const renderContent = () => (
+    <div className="flex-1 flex flex-col min-h-0">
+      {/* Canvas container - fills available space, safe-area aware, smooth scroll */}
+      <div
+        ref={containerRef}
+        className="flex-1 overflow-auto bg-gray-100 p-3 sm:p-4 pb-4 sm:pb-6 pb-safe-area min-h-0"
+        style={canvasContainerStyle}>
+        <div className="flex justify-center min-h-full">
+          <canvas
+            ref={canvasRef}
+            className="shadow-lg rounded bg-white max-w-full"
+          />
+        </div>
+      </div>
+
+      {/* Footer toolbar - fixed, no shrink, safe-area aware, always visible */}
+      <div
+        className="flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-3 px-4 py-3 border-t border-gray-200 bg-white text-sm pb-safe-area"
+        style={footerToolbarStyle}>
+        {/* Page navigation - prominent */}
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-center flex-wrap">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            className="btn-secondary !px-4 !py-2.5 disabled:opacity-40 disabled:cursor-not-allowed min-w-[48px] min-h-[48px] text-base"
+            aria-label="Halaman sebelumnya"
+          >
+            ‹
+          </button>
+          <span className="text-gray-700 dark:text-gray-300 min-w-[120px] text-center font-semibold text-base">
+            Halaman {page} / {numPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(numPages, p + 1))}
+            disabled={page >= numPages}
+            className="btn-secondary !px-4 !py-2.5 disabled:opacity-40 disabled:cursor-not-allowed min-w-[48px] min-h-[48px] text-base"
+            aria-label="Halaman berikutnya"
+          >
+            ›
+          </button>
+        </div>
+
+        {/* Zoom controls - fixed logic: minus = perkecil (zoom out), plus = perbesar (zoom in) */}
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-center flex-wrap">
+          <button
+            onClick={() => setZoom((z) => (z === "auto" ? 1 : Math.max(0.5, +(z - 0.25).toFixed(2))))}
+            disabled={zoom !== "auto" && Number(zoom) <= 0.5}
+            className="btn-secondary !px-4 !py-2.5 disabled:opacity-40 min-w-[48px] min-h-[48px] text-lg font-bold"
+            aria-label="Perkecil (zoom out)"
+            title="Perkecil (zoom out)"
+          >
+            −
+          </button>
+          <span className="text-gray-700 dark:text-gray-300 min-w-[80px] text-center font-semibold text-base">
+            {zoom === "auto" ? "Otomatis" : `${Math.round(Number(zoom) * 100)}%`}
+          </span>
+          <button
+            onClick={() => setZoom((z) => (z === "auto" ? 1 : Math.min(3, +(z + 0.25).toFixed(2))))}
+            disabled={zoom !== "auto" && Number(zoom) >= 3}
+            className="btn-secondary !px-4 !py-2.5 disabled:opacity-40 min-w-[48px] min-h-[48px] text-lg font-bold"
+            aria-label="Perbesar (zoom in)"
+            title="Perbesar (zoom in)"
+          >
+            +
+          </button>
+          <button
+            onClick={() => setZoom("auto")}
+            disabled={zoom === "auto"}
+            className="btn-secondary !px-3 !py-2.5 disabled:opacity-40 min-w-[44px] min-h-[44px] ml-1 text-base"
+            aria-label="Reset zoom ke otomatis"
+            title="Pas ke lebar (otomatis)"
+          >
+            ⛶
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
 return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2 sm:p-4">
       {/* 
@@ -159,134 +293,10 @@ return (
         </div>
 
         {/* Content area - flex-1 with overflow */}
-        <div className="flex-1 overflow-hidden relative min-h-0">
-          {error ? (
-            <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
-              <p className="text-sm text-red-600">⚠️ {error}</p>
-              <button
-                onClick={() => setReloadKey((k) => k + 1)}
-                className="btn-secondary"
-              >
-                ↻ Coba Lagi
-              </button>
-              <div className="flex flex-wrap justify-center gap-2">
-                <a
-                  href={`/api/pdf?id=${docId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-primary"
-                >
-                  📄 Buka PDF di tab baru
-                </a>
-                {sumberUrl && /^https?:\/\//i.test(sumberUrl) && (
-                  <a
-                    href={sumberUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-secondary"
-                  >
-                    🔗 Buka Halaman Sumber
-                  </a>
-                )}
-              </div>
-              <p className="text-xs text-gray-400">
-                Bila tetap gagal, kemungkinan server asal dokumen sedang
-                bermasalah. Anda tetap bisa membukanya lewat tombol di atas.
-              </p>
-            </div>
-          ) : loading ? (
-            <div className="flex h-full items-center justify-center text-sm text-gray-500">
-              <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                Memuat dokumen...
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Canvas container - fills available space, safe-area aware */}
-              <div
-                ref={containerRef}
-                className="flex-1 overflow-auto bg-gray-100 p-3 sm:p-4 pb-4 sm:pb-6 pb-safe-area min-h-0"
-                style={{
-                  paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
-                } as React.CSSProperties}
-              >
-<div className="flex justify-center min-h-full">
-                  <canvas
-                    ref={canvasRef}
-                    className="shadow-lg rounded bg-white max-w-full"
-                  />
-                </div>
-              </div>
-
-{/* Footer toolbar - fixed, no shrink, safe-area aware */}
-              <div
-                className="flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-2 px-4 py-2.5 border-t border-gray-200 bg-white text-sm pb-2.5 sm:pb-4 pb-safe-area"
-              >
-                {/* Page navigation */}
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-center">
-                  <button
-                    onClick={prevPage}
-                    disabled={page <= 1}
-                    className="btn-secondary !px-3 !py-2 disabled:opacity-40 disabled:cursor-not-allowed min-w-[44px] min-h-[44px]"
-                    aria-label="Halaman sebelumnya"
-                  >
-                    ‹
-                  </button>
-                  <span className="text-gray-700 dark:text-gray-300 min-w-[100px] text-center font-medium">
-                    Halaman {page} / {numPages}
-                  </span>
-                  <button
-                    onClick={nextPage}
-                    disabled={page >= numPages}
-                    className="btn-secondary !px-3 !py-2 disabled:opacity-40 disabled:cursor-not-allowed min-w-[44px] min-h-[44px]"
-                    aria-label="Halaman berikutnya"
-                  >
-                    ›
-                  </button>
-                </div>
-
-                {/* Zoom controls */}
-                <div className="flex items-center gap-1.5 w-full sm:w-auto justify-center flex-wrap">
-                  <button
-                    onClick={zoomOut}
-                    disabled={zoom !== "auto" && Number(zoom) <= 0.5}
-                    className="btn-secondary !px-3 !py-2 disabled:opacity-40 min-w-[44px] min-h-[44px]"
-                    aria-label="Perkecil"
-                  >
-                    −
-                  </button>
-                  <span className="text-gray-700 dark:text-gray-300 min-w-[70px] text-center font-medium">
-                    {zoomDisplay}
-                  </span>
-                  <button
-                    onClick={zoomIn}
-                    disabled={zoom !== "auto" && Number(zoom) >= 3}
-                    className="btn-secondary !px-3 !py-2 disabled:opacity-40 min-w-[44px] min-h-[44px]"
-                    aria-label="Perbesar"
-                  >
-                    +
-                  </button>
-                  <button
-                    onClick={resetZoom}
-                    disabled={zoom === "auto"}
-                    className="btn-secondary !px-3 !py-2 disabled:opacity-40 min-w-[44px] min-h-[44px] ml-1"
-                    aria-label="Reset zoom ke otomatis"
-                    title="Pas ke lebar"
-                  >
-                    ⛶
-                  </button>
-                </div>
-</div>
-            </>
-          )}
+        <div className="flex-1 overflow-hidden relative min-h-0 flex flex-col">
+          {error ? renderError() : loading ? renderLoading() : renderContent()}
         </div>
       </div>
     </div>
   );
 }
-
-
-
-
-
