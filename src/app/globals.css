@@ -41,3 +41,16 @@
     @apply bg-gray-800 text-gray-100 border-gray-600 placeholder-gray-400;
   }
 }
+
+@layer utilities {
+  .pb-safe-area {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  .pt-safe-area {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+  .px-safe-area {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}

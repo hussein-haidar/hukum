@@ -139,10 +139,13 @@ export default function PdfReader({ docId, title, onClose, sumberUrl }: PdfReade
 
   const zoomDisplay = zoom === "auto" ? "Otomatis" : `${Math.round(Number(zoom) * 100)}%`;
 
-  return (
+return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2 sm:p-4">
-      {/* Mobile: full screen, Desktop: centered with max dimensions */}
-      <div className="bg-white w-full max-w-4xl h-[90vh] max-h-[90vh] sm:max-h-[85vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl">
+      {/* 
+        Mobile: full screen with safe-area support, dynamic viewport height
+        Desktop: centered with max dimensions 
+      */}
+      <div className="bg-white w-full h-[calc(100dvh-0.5rem)] max-h-[calc(100dvh-0.5rem)] sm:max-w-4xl sm:max-h-[85dvh] rounded-2xl flex flex-col overflow-hidden shadow-2xl">
         {/* Header - fixed, no shrink */}
         <div className="flex-shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-200 bg-white sticky top-0 z-10">
           <h3 className="font-semibold text-sm truncate text-gray-800 pr-4">{sanitizeText(title)}</h3>
@@ -200,10 +203,13 @@ export default function PdfReader({ docId, title, onClose, sumberUrl }: PdfReade
             </div>
           ) : (
             <>
-              {/* Canvas container - fills available space */}
+              {/* Canvas container - fills available space, safe-area aware */}
               <div
                 ref={containerRef}
-                className="flex-1 overflow-auto bg-gray-100 p-3 sm:p-4 flex justify-center items-start min-h-0"
+                className="flex-1 overflow-auto bg-gray-100 p-3 sm:p-4 pb-4 sm:pb-6 pb-safe-area flex justify-center items-start min-h-0"
+                style={{
+                  paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+                } as React.CSSProperties}
               >
                 <canvas
                   ref={canvasRef}
@@ -211,8 +217,10 @@ export default function PdfReader({ docId, title, onClose, sumberUrl }: PdfReade
                 />
               </div>
 
-              {/* Footer toolbar - fixed, no shrink */}
-              <div className="flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-2 px-4 py-2.5 border-t border-gray-200 bg-white text-sm">
+{/* Footer toolbar - fixed, no shrink, safe-area aware */}
+              <div
+                className="flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-2 px-4 py-2.5 border-t border-gray-200 bg-white text-sm pb-2.5 sm:pb-4 pb-safe-area"
+              >
                 {/* Page navigation */}
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-center">
                   <button
@@ -275,3 +283,5 @@ export default function PdfReader({ docId, title, onClose, sumberUrl }: PdfReade
     </div>
   );
 }
+
+
