@@ -11,19 +11,26 @@ export async function GET(req: Request) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const pageSize = 20;
 
-    const where: any = {};
+    const searchWhere: any = search
+      ? {
+          OR: [
+            { judul: { contains: search, mode: "insensitive" } },
+            { tentang: { contains: search, mode: "insensitive" } },
+            { nomor: { contains: search, mode: "insensitive" } },
+          ],
+        }
+      : {};
 
-    if (search) {
-      where.OR = [
-        { judul: { contains: search, mode: "insensitive" } },
-        { tentang: { contains: search, mode: "insensitive" } },
-        { nomor: { contains: search, mode: "insensitive" } },
-      ];
-    }
-
+    // Where untuk data halaman: gabungan kata kunci + kategori terpilih.
+    const where: any = { ...searchWhere };
     if (jenis) {
       where.jenis = jenis;
     }
+
+    // Where untuk daftar kategori chip: konsisten dengan kata kunci
+    // (tanpa filter kategori terpilih), supaya kategori yang ditampilkan
+    // selalu relevan dengan yang sedang diketik.
+    const jenisWhere: any = { ...searchWhere };
 
     const [total, documents, jenisList] = await Promise.all([
       prisma.legalDocument.count({ where }),
@@ -36,7 +43,7 @@ export async function GET(req: Request) {
       prisma.legalDocument.groupBy({
         by: ["jenis"],
         _count: { id: true },
-        where: { jenis: { not: "" } },
+        where: jenisWhere,
         orderBy: { jenis: "asc" },
       }),
     ]);

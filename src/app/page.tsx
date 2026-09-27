@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 
-const featureKeys = [
+const baseFeatures = [
   { href: "/faq", icon: "❓", key: "home.faq", color: "bg-blue-50 text-blue-700" },
-  { href: "/template-surat", icon: "📝", key: "home.template", color: "bg-green-50 text-green-700" },
+  { href: "/template-surat", icon: "📝", key: "home.template", color: "bg-green-50 text-green-700", templateVisibleKey: true },
   { href: "/kalkulator", icon: "🧮", key: "home.kalkulator", color: "bg-purple-50 text-purple-700" },
   { href: "/glosarium", icon: "📖", key: "home.glosarium", color: "bg-amber-50 text-amber-700" },
   { href: "/chatbot", icon: "🤖", key: "home.chatbot", color: "bg-rose-50 text-rose-700" },
@@ -15,6 +16,18 @@ const featureKeys = [
 
 export default function HomePage() {
   const { t } = useI18n();
+  const [templateVisible, setTemplateVisible] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => setTemplateVisible(!!d.templateSuratVisible))
+      .catch(() => {});
+  }, []);
+
+  const featureKeys = baseFeatures.filter(
+    (f) => !f.templateVisibleKey || templateVisible
+  );
 
   return (
     <div>
