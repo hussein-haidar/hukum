@@ -286,13 +286,17 @@ export default function DokumenPage() {
                   <p className="text-gray-600 dark:text-gray-400 mt-1">{sanitizeText(doc.tentang)}</p>
                 )}
                 <div className="flex flex-col sm:flex-row gap-2 mt-3 text-sm">
-                  {doc.urlPdf && /^https?:\/\//i.test(doc.urlPdf) && (
+                  {doc.urlPdf && /^https?:\/\//i.test(doc.urlPdf) ? (
                     <button
                       onClick={() => setReaderDoc(doc)}
                       className="btn-primary !py-2 !px-4 text-sm whitespace-nowrap"
                     >
                       {t("dokumen.readPdf")}
                     </button>
+                  ) : (
+                    <span className="text-xs text-gray-500 dark:text-gray-400 self-center sm:self-auto px-2">
+                      PDF tidak tersedia
+                    </span>
                   )}
                   {doc.urlSumber && /^https?:\/\//i.test(doc.urlSumber) && (
                     <a
