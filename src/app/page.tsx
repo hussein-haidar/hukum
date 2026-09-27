@@ -1,88 +1,50 @@
-import Link from "next/link";
+"use client";
 
-const features = [
-  {
-    icon: "❓",
-    title: "FAQ Hukum",
-    desc: "Pertanyaan umum seputar hukum Indonesia dengan jawaban sederhana dan mudah dipahami.",
-    href: "/faq",
-    color: "bg-blue-50 text-blue-700",
-  },
-  {
-    icon: "📝",
-    title: "Template Surat",
-    desc: "Berbagai template surat hukum siap pakai: kuasa, gugatan, somasi, perjanjian.",
-    href: "/template-surat",
-    color: "bg-green-50 text-green-700",
-  },
-  {
-    icon: "🧮",
-    title: "Kalkulator Hukum",
-    desc: "Hitung denda, biaya perkara, pesangon PHK, dan simulasi cicilan hukum.",
-    href: "/kalkulator",
-    color: "bg-purple-50 text-purple-700",
-  },
-  {
-    icon: "📖",
-    title: "Glosarium Hukum",
-    desc: "Kamus istilah hukum Indonesia A-Z dengan penjelasan sederhana.",
-    href: "/glosarium",
-    color: "bg-amber-50 text-amber-700",
-  },
-  {
-    icon: "🤖",
-    title: "Chatbot Hukum AI",
-    desc: "Tanyakan pertanyaan hukum dan dapatkan jawaban dari AI berbasis data hukum Indonesia.",
-    href: "/chatbot",
-    color: "bg-rose-50 text-rose-700",
-  },
-  {
-    icon: "📄",
-    title: "Ringkas Dokumen",
-    desc: "Tempel teks UU atau peraturan hukum, dapatkan ringkasan dalam bahasa sederhana.",
-    href: "/ringkas",
-    color: "bg-teal-50 text-teal-700",
-  },
-  {
-    icon: "🤝",
-    title: "Bantuan Hukum",
-    desc: "Tips menghadapi masalah hukum, langkah yang harus diambil, dan direktori lembaga bantuan hukum.",
-    href: "/bantuan-hukum",
-    color: "bg-indigo-50 text-indigo-700",
-  },
+import Link from "next/link";
+import { useI18n } from "@/lib/i18n";
+
+const featureKeys = [
+  { href: "/faq", icon: "❓", key: "home.faq", color: "bg-blue-50 text-blue-700" },
+  { href: "/template-surat", icon: "📝", key: "home.template", color: "bg-green-50 text-green-700" },
+  { href: "/kalkulator", icon: "🧮", key: "home.kalkulator", color: "bg-purple-50 text-purple-700" },
+  { href: "/glosarium", icon: "📖", key: "home.glosarium", color: "bg-amber-50 text-amber-700" },
+  { href: "/chatbot", icon: "🤖", key: "home.chatbot", color: "bg-rose-50 text-rose-700" },
+  { href: "/ringkas", icon: "📄", key: "home.ringkas", color: "bg-teal-50 text-teal-700" },
+  { href: "/bantuan-hukum", icon: "🤝", key: "home.bantuan", color: "bg-indigo-50 text-indigo-700" },
 ];
 
 export default function HomePage() {
+  const { t } = useI18n();
+
   return (
     <div>
       <section className="bg-gradient-to-br from-blue-600 to-blue-800 text-white">
         <div className="max-w-7xl mx-auto px-4 py-20 md:py-28">
           <div className="text-center max-w-3xl mx-auto">
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              Panduan Hukum <span className="text-blue-200">Sederhana</span>
+              {t("home.hero.title1")} <span className="text-blue-200">{t("home.hero.title2")}</span>
             </h1>
             <p className="text-lg md:text-xl text-blue-100 mb-8">
-              Pahami hukum Indonesia dengan mudah. FAQ, template surat, kalkulator,
-              glosarium, dan bantuan AI — semua gratis di satu tempat.
+              {t("home.hero.subtitle")}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/faq"
                 className="bg-white text-blue-700 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
               >
-                Mulai Jelajahi
+                {t("home.hero.btnExplore")}
               </Link>
               <Link
                 href="/bantuan-hukum"
                 className="bg-blue-500/30 border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition-colors"
               >
-                Cari Bantuan Hukum
+                {t("home.hero.btnAid")}
               </Link>
               <Link
                 href="/chatbot"
                 className="bg-white/10 border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition-colors"
               >
-                Tanya Chatbot AI
+                {t("home.hero.btnChat")}
               </Link>
             </div>
           </div>
@@ -90,13 +52,12 @@ export default function HomePage() {
       </section>
 
       <section className="max-w-7xl mx-auto px-4 py-16 md:py-20">
-        <h2 className="text-3xl font-bold text-center mb-4">Fitur Unggulan</h2>
-        <p className="text-gray-600 text-center mb-12 max-w-2xl mx-auto">
-          Semua yang Anda butuhkan untuk memahami hukum Indonesia, tersedia secara
-          gratis dan mudah diakses.
+        <h2 className="text-3xl font-bold text-center mb-4 dark:text-gray-100">{t("home.featuresTitle")}</h2>
+        <p className="text-gray-600 dark:text-gray-400 text-center mb-12 max-w-2xl mx-auto">
+          {t("home.featuresSub")}
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((f) => (
+          {featureKeys.map((f) => (
             <Link key={f.href} href={f.href}>
               <div className="card cursor-pointer h-full">
                 <div
@@ -104,10 +65,10 @@ export default function HomePage() {
                 >
                   {f.icon}
                 </div>
-                <h3 className="text-xl font-semibold mb-2">{f.title}</h3>
-                <p className="text-gray-600">{f.desc}</p>
-                <div className="mt-4 text-blue-600 text-sm font-medium">
-                  Pelajari Lebih Lanjut →
+                <h3 className="text-xl font-semibold mb-2 dark:text-gray-100">{t(`${f.key}.title`)}</h3>
+                <p className="text-gray-600 dark:text-gray-400">{t(`${f.key}.desc`)}</p>
+                <div className="mt-4 text-blue-600 dark:text-blue-400 text-sm font-medium">
+                  {t("home.learnMore")}
                 </div>
               </div>
             </Link>
@@ -115,77 +76,64 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="bg-gray-100">
+      <section className="bg-gray-100 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 py-16">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div>
-              <div className="text-4xl font-bold text-blue-600 mb-2">100+</div>
-              <div className="text-gray-600">Istilah Hukum</div>
+              <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">100+</div>
+              <div className="text-gray-600 dark:text-gray-400">{t("home.stat.istilah")}</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-blue-600 mb-2">20+</div>
-              <div className="text-gray-600">Template Surat</div>
+              <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">20+</div>
+              <div className="text-gray-600 dark:text-gray-400">{t("home.stat.template")}</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-blue-600 mb-2">24/7</div>
-              <div className="text-gray-600">Akses Chatbot AI</div>
+              <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">24/7</div>
+              <div className="text-gray-600 dark:text-gray-400">{t("home.stat.ai")}</div>
             </div>
           </div>
         </div>
       </section>
 
       <section className="max-w-7xl mx-auto px-4 py-16">
-        <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-8 md:p-12">
+        <div className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-gray-800 dark:to-gray-800 rounded-2xl p-8 md:p-12">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                Bingung Menghadapi Masalah Hukum?
+              <h2 className="text-2xl md:text-3xl font-bold mb-4 dark:text-gray-100">
+                {t("home.ctaTitle")}
               </h2>
-              <p className="text-gray-600 mb-2">
-                Temukan tips menghadapi perkara, langkah-langkah yang harus
-                dilakukan, dan direktori lembaga bantuan hukum gratis di seluruh
-                Indonesia.
+              <p className="text-gray-600 dark:text-gray-400 mb-2">
+                {t("home.ctaDesc")}
               </p>
               <Link
                 href="/bantuan-hukum"
                 className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors inline-block mt-4"
               >
-                Lihat Bantuan Hukum
+                {t("home.ctaBtn")}
               </Link>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-                <div className="text-3xl mb-2">🚨</div>
-                <p className="text-sm font-medium">Situasi Darurat Hukum</p>
-              </div>
-              <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-                <div className="text-3xl mb-2">💼</div>
-                <p className="text-sm font-medium">Bantuan Hukum Gratis</p>
-              </div>
-              <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-                <div className="text-3xl mb-2">🏛️</div>
-                <p className="text-sm font-medium">Posbakum & LBH</p>
-              </div>
-              <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-                <div className="text-3xl mb-2">📋</div>
-                <p className="text-sm font-medium">Tips & Langkah Hukum</p>
-              </div>
+              {[1, 2, 3, 4].map((n) => (
+                <div key={n} className="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-sm text-center">
+                  <div className="text-3xl mb-2">{["🚨", "💼", "🏛️", "📋"][n - 1]}</div>
+                  <p className="text-sm font-medium dark:text-gray-100">{t(`home.grid${n}`)}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
       <section className="max-w-7xl mx-auto px-4 py-16">
-        <div className="bg-blue-50 rounded-2xl p-8 md:p-12 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold mb-4">
-            Butuh Bantuan Hukum Sekarang?
+        <div className="bg-blue-50 dark:bg-gray-800 rounded-2xl p-8 md:p-12 text-center">
+          <h2 className="text-2xl md:text-3xl font-bold mb-4 dark:text-gray-100">
+            {t("home.finalTitle")}
           </h2>
-          <p className="text-gray-600 mb-6 max-w-xl mx-auto">
-            Gunakan Chatbot AI kami untuk bertanya seputar hukum Indonesia. AI akan
-            menjawab berdasarkan data hukum yang tersedia.
+          <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-xl mx-auto">
+            {t("home.finalDesc")}
           </p>
           <Link href="/chatbot" className="btn-primary inline-block">
-            Buka Chatbot
+            {t("home.finalBtn")}
           </Link>
         </div>
       </section>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import PdfReader from "@/components/PdfReader";
+import { useI18n } from "@/lib/i18n";
 
 interface Dokumen {
   id: number;
@@ -30,6 +31,7 @@ interface JenisCount {
 }
 
 export default function DokumenPage() {
+  const { t } = useI18n();
   const CAT_WINDOW = 8;
   const CAT_INTERVAL_MS = 4000;
 
@@ -147,41 +149,44 @@ export default function DokumenPage() {
   );
 
   const statusBadge = (status: string) => {
-    const label = status === "berlaku" ? "Berlaku" : status === "dicabut" ? "Dicabut" : status;
+    const label =
+      status === "berlaku"
+        ? t("dokumen.status.berlaku")
+        : status === "dicabut"
+        ? t("dokumen.status.dicabut")
+        : status;
     const cls =
       status === "berlaku"
-        ? "bg-green-100 text-green-700"
+        ? "bg-green-100 text-green-700 dark:bg-gray-700 dark:text-green-300"
         : status === "dicabut"
-        ? "bg-red-100 text-red-700"
-        : "bg-gray-100 text-gray-700";
+        ? "bg-red-100 text-red-700 dark:bg-gray-700 dark:text-red-300"
+        : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";
     return <span className={`badge ${cls}`}>{label}</span>;
   };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold mb-2">Peraturan &amp; Dokumen Hukum</h1>
-      <p className="text-gray-600 mb-8">
-        Dokumen hukum dari berbagai sumber resmi: peraturan perundang-undangan
-        Indonesia (Peraturan.go.id, JDIH), hukum Islam (Fatwa MUI, JPI), dan
-        hukum internasional (UN, OHCHR, HukumOnline).
+      <h1 className="text-3xl font-bold mb-2 dark:text-gray-100">{t("dokumen.title")}</h1>
+      <p className="text-gray-600 dark:text-gray-400 mb-8">
+        {t("dokumen.subtitle")}
       </p>
 
       <div className="flex gap-2 mb-6">
         <input
           type="text"
-          placeholder="Cari judul, tentang, atau nomor peraturan..."
+          placeholder={t("dokumen.searchPlaceholder")}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           className="input-field"
         />
         <button onClick={handleSearch} className="btn-primary flex-shrink-0">
-          Cari
+          {t("dokumen.search")}
         </button>
         <button
           onClick={handleRefresh}
           className="btn-secondary flex-shrink-0"
-          title="Refresh / reset penelusuran"
+          title={t("dokumen.reset")}
         >
           ⟳
         </button>
@@ -194,17 +199,17 @@ export default function DokumenPage() {
         <button
           onClick={() => selectJenis("")}
           className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-            jenis === "" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            jenis === "" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
           }`}
         >
-          Semua
+          {t("dokumen.all")}
         </button>
         {visibleJenis.map((j) => (
           <button
             key={j}
             onClick={() => selectJenis(j)}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              jenis === j ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              jenis === j ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
             }`}
           >
             {j}
@@ -214,73 +219,73 @@ export default function DokumenPage() {
 
       {loading ? (
         <div className="text-center py-16">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-500">Memuat data...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto dark:border-blue-400"></div>
+          <p className="mt-4 text-gray-500 dark:text-gray-400">{t("dokumen.loading")}</p>
         </div>
       ) : error ? (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center max-w-2xl mx-auto">
+        <div className="bg-amber-50 dark:bg-gray-800 border border-amber-200 dark:border-gray-700 rounded-2xl p-8 text-center max-w-2xl mx-auto">
           <div className="text-5xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold mb-2">Data Peraturan Belum Tersedia</h2>
-          <p className="text-gray-600 mb-6">
+          <h2 className="text-xl font-bold mb-2 dark:text-gray-100">{t("dokumen.emptyTitle")}</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             {error}
           </p>
-          <div className="text-gray-500 text-sm space-y-2">
-            <p>Database peraturan belum diisi. Data dapat disinkronkan dari sumber resmi seperti Peraturan.go.id dan JDIH melalui panel admin.</p>
+          <div className="text-gray-500 dark:text-gray-400 text-sm space-y-2">
+            <p>{t("dokumen.emptyText")}</p>
           </div>
           <button
             onClick={() => setMeta((m) => ({ ...m, page: 1 }))}
             className="mt-6 bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors"
           >
-            Coba Lagi
+            {t("dokumen.retry")}
           </button>
         </div>
       ) : documents.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center max-w-2xl mx-auto">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-8 text-center max-w-2xl mx-auto">
           <div className="text-5xl mb-4">📭</div>
-          <h2 className="text-xl font-bold mb-2">Belum Ada Peraturan</h2>
-          <p className="text-gray-600">
+          <h2 className="text-xl font-bold mb-2 dark:text-gray-100">{t("dokumen.noResult")}</h2>
+          <p className="text-gray-600 dark:text-gray-400">
             {search && jenis
-              ? `Tidak ada peraturan dengan kata kunci "${search}" pada kategori ${jenis}.`
+              ? t("dokumen.noSearchInCat").replace("%1", search).replace("%2", jenis)
               : search
-              ? `Tidak ada peraturan yang cocok dengan kata kunci "${search}".`
+              ? t("dokumen.noResultSearch").replace("%1", search)
               : jenis
-              ? `Tidak ada peraturan pada kategori ${jenis}.`
-              : "Database peraturan masih kosong. Jalankan Data Sync melalui panel admin untuk mengambil peraturan dari sumber resmi."}
+              ? t("dokumen.noResultCat").replace("%1", jenis)
+              : t("dokumen.emptyText")}
           </p>
           {(search || jenis) && (
             <button onClick={handleRefresh} className="mt-6 btn-secondary">
-              Reset Pencarian
+              {t("dokumen.reset")}
             </button>
           )}
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-500 mb-4">
-            Menampilkan {documents.length} dari {meta.total} dokumen
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            {t("dokumen.showing").replace("%1", String(documents.length)).replace("%2", String(meta.total))}
           </p>
           <div className="space-y-3">
             {documents.map((doc) => (
               <div key={doc.id} className="card">
                 <div className="flex flex-wrap gap-2 mb-2">
-                  <span className="badge bg-blue-100 text-blue-700">
+                  <span className="badge bg-blue-100 text-blue-700 dark:bg-gray-700 dark:text-blue-300">
                     {doc.jenis} No. {doc.nomor}/{doc.tahun}
                   </span>
                   {statusBadge(doc.status)}
                   {doc.instansi && (
-                    <span className="badge bg-purple-100 text-purple-700">{doc.instansi}</span>
+                    <span className="badge bg-purple-100 text-purple-700 dark:bg-gray-700 dark:text-purple-300">{doc.instansi}</span>
                   )}
                 </div>
-                <h3 className="font-semibold text-lg text-gray-800">{doc.judul}</h3>
+                <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-100">{doc.judul}</h3>
                 {doc.tentang && (
-                  <p className="text-gray-600 mt-1">{doc.tentang}</p>
+                  <p className="text-gray-600 dark:text-gray-400 mt-1">{doc.tentang}</p>
                 )}
                 <div className="flex flex-wrap gap-4 mt-3 text-sm">
                   {doc.urlPdf && /^https?:\/\//i.test(doc.urlPdf) && (
                     <button
                       onClick={() => setReaderDoc(doc)}
-                      className="text-blue-600 hover:underline font-medium text-left"
+                      className="text-blue-600 dark:text-blue-400 hover:underline font-medium text-left"
                     >
-                      📄 Baca PDF
+                      {t("dokumen.readPdf")}
                     </button>
                   )}
                   {doc.urlSumber && /^https?:\/\//i.test(doc.urlSumber) && (
@@ -288,12 +293,12 @@ export default function DokumenPage() {
                       href={doc.urlSumber}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-gray-600 hover:underline"
+                      className="text-gray-600 dark:text-gray-300 hover:underline"
                     >
-                      🔗 Sumber
+                      {t("dokumen.source")}
                     </a>
                   )}
-                  <span className="text-gray-400">Sumber: {doc.source}</span>
+                  <span className="text-gray-400 dark:text-gray-500">{t("dokumen.sourceLabel").replace("%1", doc.source)}</span>
                 </div>
               </div>
             ))}
@@ -304,19 +309,19 @@ export default function DokumenPage() {
               <button
                 onClick={() => setMeta((m) => ({ ...m, page: Math.max(1, m.page - 1) }))}
                 disabled={meta.page <= 1}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
               >
-                Sebelumnya
+                {t("dokumen.prev")}
               </button>
-              <span className="px-4 py-2 text-sm text-gray-600">
-                Halaman {meta.page} / {meta.totalPages}
+              <span className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">
+                {t("dokumen.page").replace("%1", String(meta.page)).replace("%2", String(meta.totalPages))}
               </span>
               <button
                 onClick={() => setMeta((m) => ({ ...m, page: Math.min(m.totalPages, m.page + 1) }))}
                 disabled={meta.page >= meta.totalPages}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
               >
-                Berikutnya
+                {t("dokumen.next")}
               </button>
             </div>
           )}

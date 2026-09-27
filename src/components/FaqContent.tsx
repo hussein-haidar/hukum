@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useI18n } from "@/lib/i18n";
 
 interface FAQ {
   id: number;
@@ -13,6 +14,8 @@ const WINDOW = 6;
 const INTERVAL_MS = 4000;
 
 export default function FaqContent({ faqs }: { faqs: FAQ[] }) {
+  const { t } = useI18n();
+  const allLabel = t("faq.all");
   const [catStart, setCatStart] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -20,8 +23,8 @@ export default function FaqContent({ faqs }: { faqs: FAQ[] }) {
 
   const allCategories = useMemo(() => {
     const set = new Set<string>(faqs.map((f) => f.category).filter(Boolean));
-    return ["Semua", ...Array.from(set).sort()];
-  }, [faqs]);
+    return [allLabel, ...Array.from(set).sort()];
+  }, [faqs, allLabel]);
 
   // Rotasi otomatis window kategori; berhenti saat user memilih kategori.
   useEffect(() => {
@@ -42,7 +45,7 @@ export default function FaqContent({ faqs }: { faqs: FAQ[] }) {
 
   const filtered = faqs.filter((faq) => {
     const matchCategory =
-      selectedCategory === null || selectedCategory === "Semua" || faq.category === selectedCategory;
+      selectedCategory === null || selectedCategory === allLabel || faq.category === selectedCategory;
     const matchSearch =
       faq.question.toLowerCase().includes(search.toLowerCase()) ||
       faq.answer.toLowerCase().includes(search.toLowerCase());
@@ -56,12 +59,12 @@ export default function FaqContent({ faqs }: { faqs: FAQ[] }) {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold mb-2">FAQ Hukum</h1>
-      <p className="text-gray-600 mb-8">Pertanyaan umum seputar hukum Indonesia</p>
+      <h1 className="text-3xl font-bold mb-2 dark:text-gray-100">{t("faq.title")}</h1>
+      <p className="text-gray-600 dark:text-gray-400 mb-8">{t("faq.subtitle")}</p>
 
       <input
         type="text"
-        placeholder="Cari pertanyaan..."
+        placeholder={t("faq.searchPlaceholder")}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="input-field mb-4"
@@ -75,7 +78,7 @@ export default function FaqContent({ faqs }: { faqs: FAQ[] }) {
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
               selectedCategory === cat
                 ? "bg-blue-600 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
             }`}
           >
             {cat}
@@ -85,7 +88,7 @@ export default function FaqContent({ faqs }: { faqs: FAQ[] }) {
 
       <div className="space-y-3">
         {filtered.length === 0 && (
-          <p className="text-gray-500 text-center py-8">Tidak ada FAQ ditemukan.</p>
+          <p className="text-gray-500 dark:text-gray-400 text-center py-8">{t("faq.notFound")}</p>
         )}
         {filtered.map((faq) => (
           <div key={faq.id} className="card">
@@ -94,15 +97,15 @@ export default function FaqContent({ faqs }: { faqs: FAQ[] }) {
               className="w-full text-left flex justify-between items-start gap-4"
             >
               <div>
-                <span className="badge bg-blue-100 text-blue-700 mb-2">{faq.category}</span>
-                <h3 className="font-semibold text-lg">{faq.question}</h3>
+                <span className="badge bg-blue-100 text-blue-700 dark:bg-gray-700 dark:text-blue-300 mb-2">{faq.category}</span>
+                <h3 className="font-semibold text-lg dark:text-gray-100">{faq.question}</h3>
               </div>
               <span className="text-gray-400 text-2xl flex-shrink-0 mt-1">
                 {expandedId === faq.id ? "−" : "+"}
               </span>
             </button>
             {expandedId === faq.id && (
-              <div className="mt-4 pt-4 border-t border-gray-100 text-gray-700 leading-relaxed">
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 text-gray-700 dark:text-gray-300 leading-relaxed">
                 {faq.answer}
               </div>
             )}

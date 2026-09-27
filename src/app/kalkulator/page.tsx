@@ -1,32 +1,36 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n";
 
 export default function KalkulatorPage() {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState("pesangon");
+
+  const tabs = [
+    { id: "pesangon", key: "kalkulator.tab.pesangon" },
+    { id: "lembur", key: "kalkulator.tab.lembur" },
+    { id: "cicilan", key: "kalkulator.tab.cicilan" },
+    { id: "denda", key: "kalkulator.tab.denda" },
+  ];
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold mb-2">Kalkulator Hukum</h1>
-      <p className="text-gray-600 mb-8">Hitung berbagai simulasi hukum dengan mudah</p>
+      <h1 className="text-3xl font-bold mb-2 dark:text-gray-100">{t("kalkulator.title")}</h1>
+      <p className="text-gray-600 dark:text-gray-400 mb-8">{t("kalkulator.subtitle")}</p>
 
       <div className="flex flex-wrap gap-2 mb-8">
-        {[
-          { id: "pesangon", label: "Pesangon PHK" },
-          { id: "lembur", label: "Upah Lembur" },
-          { id: "cicilan", label: "Simulasi Cicilan" },
-          { id: "denda", label: "Denda Tilang" },
-        ].map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === tab.id
                 ? "bg-purple-600 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
             }`}
           >
-            {tab.label}
+            {t(tab.key)}
           </button>
         ))}
       </div>
@@ -40,6 +44,7 @@ export default function KalkulatorPage() {
 }
 
 function PesangonCalc() {
+  const { t } = useI18n();
   const [gaji, setGaji] = useState("");
   const [masaKerja, setMasaKerja] = useState("");
   const [alasan, setAlasan] = useState("phk-biasa");
@@ -58,29 +63,29 @@ function PesangonCalc() {
 
   return (
     <div className="card space-y-4">
-      <h2 className="text-xl font-semibold">Kalkulator Pesangon PHK</h2>
-      <p className="text-sm text-gray-500">Berdasarkan UU Ketenagakerjaan No. 13 Tahun 2003</p>
+      <h2 className="text-xl font-semibold dark:text-gray-100">{t("kalkulator.pesangon.title")}</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400">{t("kalkulator.pesangon.sub")}</p>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Gaji Bulanan (Rp)</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("kalkulator.gaji")}</label>
         <input type="number" value={gaji} onChange={(e) => setGaji(e.target.value)} className="input-field" placeholder="Contoh: 5000000" />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Masa Kerja (Tahun)</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("kalkulator.masaKerja")}</label>
         <input type="number" value={masaKerja} onChange={(e) => setMasaKerja(e.target.value)} className="input-field" placeholder="Contoh: 5" />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Alasan PHK</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("kalkulator.alasanPhk")}</label>
         <select value={alasan} onChange={(e) => setAlasan(e.target.value)} className="input-field">
-          <option value="phk-biasa">PHK Biasa</option>
-          <option value="phk-mendadak">PHK Mendadak (Tanpa Pemberitahuan)</option>
+          <option value="phk-biasa">{t("kalkulator.phkBiasa")}</option>
+          <option value="phk-mendadak">{t("kalkulator.phkMendadak")}</option>
         </select>
       </div>
-      <button onClick={hitung} className="btn-primary">Hitung</button>
+      <button onClick={hitung} className="btn-primary">{t("kalkulator.hitung")}</button>
       {hasil !== null && (
-        <div className="bg-purple-50 p-4 rounded-lg">
-          <p className="text-sm text-gray-600">Total estimasi pesangon:</p>
-          <p className="text-2xl font-bold text-purple-700">Rp {hasil.toLocaleString("id-ID")}</p>
-          <p className="text-xs text-gray-500 mt-1">*Termasuk pesangon + penghargaan masa kerja + penggantian hak</p>
+        <div className="bg-purple-50 dark:bg-gray-700 p-4 rounded-lg">
+          <p className="text-sm text-gray-600 dark:text-gray-300">{t("kalkulator.estimasiPesangon")}</p>
+          <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">Rp {hasil.toLocaleString("id-ID")}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t("kalkulator.pesangon.note")}</p>
         </div>
       )}
     </div>
@@ -88,6 +93,7 @@ function PesangonCalc() {
 }
 
 function LemburCalc() {
+  const { t } = useI18n();
   const [gaji, setGaji] = useState("");
   const [jamLembur, setJamLembur] = useState("");
   const [hasil, setHasil] = useState<number | null>(null);
@@ -102,22 +108,22 @@ function LemburCalc() {
 
   return (
     <div className="card space-y-4">
-      <h2 className="text-xl font-semibold">Kalkulator Upah Lembur</h2>
-      <p className="text-sm text-gray-500">Berdasarkan PP No. 35 Tahun 2021 tentang Perjanjian Kerja Waktu Tertentu</p>
+      <h2 className="text-xl font-semibold dark:text-gray-100">{t("kalkulator.lembur.title")}</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400">{t("kalkulator.lembur.sub")}</p>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Gaji Bulanan (Rp)</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("kalkulator.gaji")}</label>
         <input type="number" value={gaji} onChange={(e) => setGaji(e.target.value)} className="input-field" placeholder="Contoh: 5000000" />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Jam Lembur</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("kalkulator.jamLembur")}</label>
         <input type="number" value={jamLembur} onChange={(e) => setJamLembur(e.target.value)} className="input-field" placeholder="Contoh: 10" />
       </div>
-      <button onClick={hitung} className="btn-primary">Hitung</button>
+      <button onClick={hitung} className="btn-primary">{t("kalkulator.hitung")}</button>
       {hasil !== null && (
-        <div className="bg-purple-50 p-4 rounded-lg">
-          <p className="text-sm text-gray-600">Total upah lembur:</p>
-          <p className="text-2xl font-bold text-purple-700">Rp {hasil.toLocaleString("id-ID")}</p>
-          <p className="text-xs text-gray-500 mt-1">*150% dari upah per jam kerja (173 jam/bulan)</p>
+        <div className="bg-purple-50 dark:bg-gray-700 p-4 rounded-lg">
+          <p className="text-sm text-gray-600 dark:text-gray-300">{t("kalkulator.totalLembur")}</p>
+          <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">Rp {hasil.toLocaleString("id-ID")}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t("kalkulator.lembur.note")}</p>
         </div>
       )}
     </div>
@@ -125,6 +131,7 @@ function LemburCalc() {
 }
 
 function CicilanCalc() {
+  const { t } = useI18n();
   const [pinjaman, setPinjaman] = useState("");
   const [sukuBunga, setSukuBunga] = useState("");
   const [tenor, setTenor] = useState("");
@@ -143,25 +150,25 @@ function CicilanCalc() {
 
   return (
     <div className="card space-y-4">
-      <h2 className="text-xl font-semibold">Simulasi Cicilan</h2>
+      <h2 className="text-xl font-semibold dark:text-gray-100">{t("kalkulator.cicilan.title")}</h2>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Jumlah Pinjaman (Rp)</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("kalkulator.pinjaman")}</label>
         <input type="number" value={pinjaman} onChange={(e) => setPinjaman(e.target.value)} className="input-field" placeholder="Contoh: 100000000" />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Suku Bunga per Tahun (%)</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("kalkulator.bunga")}</label>
         <input type="number" value={sukuBunga} onChange={(e) => setSukuBunga(e.target.value)} className="input-field" placeholder="Contoh: 10" />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Tenor (Bulan)</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("kalkulator.tenor")}</label>
         <input type="number" value={tenor} onChange={(e) => setTenor(e.target.value)} className="input-field" placeholder="Contoh: 60" />
       </div>
-      <button onClick={hitung} className="btn-primary">Hitung</button>
+      <button onClick={hitung} className="btn-primary">{t("kalkulator.hitung")}</button>
       {hasil && (
-        <div className="bg-purple-50 p-4 rounded-lg space-y-2">
-          <div className="flex justify-between"><span className="text-gray-600">Angsuran/Bulan</span><span className="font-bold">Rp {hasil.angsuran.toLocaleString("id-ID")}</span></div>
-          <div className="flex justify-between"><span className="text-gray-600">Total Pembayaran</span><span className="font-bold">Rp {hasil.total.toLocaleString("id-ID")}</span></div>
-          <div className="flex justify-between"><span className="text-gray-600">Total Bunga</span><span className="font-bold text-red-600">Rp {hasil.bunga.toLocaleString("id-ID")}</span></div>
+        <div className="bg-purple-50 dark:bg-gray-700 p-4 rounded-lg space-y-2">
+          <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-300">{t("kalkulator.angsuran")}</span><span className="font-bold dark:text-gray-100">Rp {hasil.angsuran.toLocaleString("id-ID")}</span></div>
+          <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-300">{t("kalkulator.totalBayar")}</span><span className="font-bold dark:text-gray-100">Rp {hasil.total.toLocaleString("id-ID")}</span></div>
+          <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-300">{t("kalkulator.totalBunga")}</span><span className="font-bold text-red-600 dark:text-red-400">Rp {hasil.bunga.toLocaleString("id-ID")}</span></div>
         </div>
       )}
     </div>
@@ -169,6 +176,7 @@ function CicilanCalc() {
 }
 
 function DendaCalc() {
+  const { t } = useI18n();
   const [jenisDenda, setJenisDenda] = useState("tidak-hadir");
   const [keterangan, setKeterangan] = useState("");
   const [hasil, setHasil] = useState<{denda: number; deskripsi: string} | null>(null);
@@ -187,10 +195,10 @@ function DendaCalc() {
 
   return (
     <div className="card space-y-4">
-      <h2 className="text-xl font-semibold">Simulasi Denda Tilang</h2>
-      <p className="text-sm text-gray-500">Estimasi denda berdasarkan peraturan yang berlaku</p>
+      <h2 className="text-xl font-semibold dark:text-gray-100">{t("kalkulator.denda.title")}</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400">{t("kalkulator.denda.sub")}</p>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Jenis Denda</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("kalkulator.jenisDenda")}</label>
         <select value={jenisDenda} onChange={(e) => setJenisDenda(e.target.value)} className="input-field">
           <option value="tidak-hadir">Tidak Hadir di Sidang</option>
           <option value="telat-lapor">Terlambat Melapor</option>
@@ -200,12 +208,12 @@ function DendaCalc() {
           <option value="knalpot-racing">Knalpot Racing/Modifikasi</option>
         </select>
       </div>
-      <button onClick={hitung} className="btn-primary">Cek Denda</button>
+      <button onClick={hitung} className="btn-primary">{t("kalkulator.cekDenda")}</button>
       {hasil && (
-        <div className="bg-purple-50 p-4 rounded-lg">
-          <p className="text-sm text-gray-600 mb-1">{hasil.deskripsi}</p>
-          <p className="text-2xl font-bold text-purple-700">Rp {hasil.denda.toLocaleString("id-ID")}</p>
-          <p className="text-xs text-gray-500 mt-1">*Estimasi, besaran aktual dapat berbeda sesuai putusan hakim</p>
+        <div className="bg-purple-50 dark:bg-gray-700 p-4 rounded-lg">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">{hasil.deskripsi}</p>
+          <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">Rp {hasil.denda.toLocaleString("id-ID")}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t("kalkulator.denda.note")}</p>
         </div>
       )}
     </div>

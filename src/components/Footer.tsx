@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useI18n } from "@/lib/i18n";
 
 export default function Footer() {
   const [templateVisible, setTemplateVisible] = useState(false);
+  const { t } = useI18n();
 
   useEffect(() => {
     fetch("/api/settings")
@@ -21,43 +23,36 @@ export default function Footer() {
               <span className="text-2xl">⚖️</span>
               <span className="text-xl font-bold text-white">HukumKu</span>
             </div>
-            <p className="text-sm text-gray-400">
-              Panduan hukum sederhana untuk masyarakat Indonesia. Mudah dipahami,
-              gratis, dan dapat diakses kapan saja.
-            </p>
+            <p className="text-sm text-gray-400">{t("footer.tagline")}</p>
           </div>
           <div>
-            <h3 className="text-white font-semibold mb-3">Fitur</h3>
+            <h3 className="text-white font-semibold mb-3">{t("footer.features")}</h3>
             <ul className="space-y-2 text-sm">
-              <li><a href="/faq" className="hover:text-white">FAQ Hukum</a></li>
+              <li><a href="/faq" className="hover:text-white">{t("nav.faq")}</a></li>
               {templateVisible && (
-                <li><a href="/template-surat" className="hover:text-white">Template Surat</a></li>
+                <li><a href="/template-surat" className="hover:text-white">{t("nav.template")}</a></li>
               )}
-              <li><a href="/kalkulator" className="hover:text-white">Kalkulator Hukum</a></li>
-              <li><a href="/glosarium" className="hover:text-white">Glosarium</a></li>
-              <li><a href="/bantuan-hukum" className="hover:text-white">Bantuan Hukum</a></li>
-              <li><a href="/tentang" className="hover:text-white">Tentang Kami</a></li>
+              <li><a href="/kalkulator" className="hover:text-white">{t("nav.kalkulator")}</a></li>
+              <li><a href="/glosarium" className="hover:text-white">{t("nav.glosarium")}</a></li>
+              <li><a href="/bantuan-hukum" className="hover:text-white">{t("nav.bantuan")}</a></li>
+              <li><a href="/tentang" className="hover:text-white">{t("nav.tentang")}</a></li>
             </ul>
           </div>
           <div>
-            <h3 className="text-white font-semibold mb-3">AI Tools</h3>
+            <h3 className="text-white font-semibold mb-3">{t("footer.aiTools")}</h3>
             <ul className="space-y-2 text-sm">
-              <li><a href="/chatbot" className="hover:text-white">Chatbot Hukum</a></li>
-              <li><a href="/ringkas" className="hover:text-white">Ringkas Dokumen</a></li>
-              <li><a href="/dokumen" className="hover:text-white">Peraturan & Regulasi</a></li>
+              <li><a href="/chatbot" className="hover:text-white">{t("nav.chatbot")}</a></li>
+              <li><a href="/ringkas" className="hover:text-white">{t("nav.ringkas")}</a></li>
+              <li><a href="/dokumen" className="hover:text-white">{t("nav.peraturan")}</a></li>
             </ul>
           </div>
           <div>
-            <h3 className="text-white font-semibold mb-3">Disclaimer</h3>
-            <p className="text-sm text-gray-400">
-              Informasi di aplikasi ini bersifat umum dan bukan pengganti konsultasi
-              hukum profesional. Untuk kasus spesifik, silakan konsultasikan dengan
-              advokat atau penasihat hukum.
-            </p>
+            <h3 className="text-white font-semibold mb-3">{t("footer.disclaimer")}</h3>
+            <p className="text-sm text-gray-400">{t("footer.disclaimerText")}</p>
           </div>
         </div>
         <div className="border-t border-gray-700 mt-8 pt-6 text-center text-sm text-gray-500">
-          © 2026 HukumKu. Dibuat untuk kepentingan edukasi hukum masyarakat.
+          {t("footer.copyright")}
         </div>
       </div>
     </footer>

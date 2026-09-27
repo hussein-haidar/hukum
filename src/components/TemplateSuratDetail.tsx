@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n";
 
 interface Template {
   id: number;
@@ -121,6 +122,7 @@ function formatRupiah(value: string): string {
 }
 
 export default function TemplateSuratDetail({ template }: { template: Template }) {
+  const { t } = useI18n();
   const [values, setValues] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState(template.content);
   const [showAI, setShowAI] = useState(false);
@@ -234,7 +236,7 @@ export default function TemplateSuratDetail({ template }: { template: Template }
         setTimeout(() => {
           if (filled > 0) {
             setAiMessage(
-              `AI mengisi ${filled} kolom. Periksa dan sesuaikan bila perlu, lalu klik "Terapkan ke Surat".`
+              t("template.aiFilled").replace("%1", String(filled))
             );
           }
         }, 0);
@@ -242,12 +244,12 @@ export default function TemplateSuratDetail({ template }: { template: Template }
         const summary = (data.summary || "").trim();
         setAiMessage(
           summary
-            ? "AI tidak menemukan nilai yang cocok untuk kolom. Beri keterangan lebih spesifik, misalnya nama, alamat, atau nominal."
-            : "Gagal memperoleh jawaban dari AI. Silakan coba lagi."
+            ? t("template.aiNoValue")
+            : t("template.aiGagal")
         );
       }
     } catch {
-      setAiMessage("Gagal terhubung ke AI. Silakan coba lagi.");
+      setAiMessage(t("template.aiNetError"));
     } finally {
       setAiLoading(false);
     }
@@ -270,32 +272,32 @@ export default function TemplateSuratDetail({ template }: { template: Template }
     if (present.length > 0) grouped.push({ section, fields: present });
   };
 
-  addGroup("Pihak 1 / Penggugat / Penyewa", [...person1, ...suspect1, ...ownerFields]);
-  addGroup("Pihak 2 / Tergugat / Penerima Kuasa", [...person2, ...suspect2, ...tenantFields]);
-  addGroup("Tanggal & Lokasi", dateFields);
-  addGroup("Objek Sewa", objectFields);
-  addGroup("Harga & Jaminan", moneyFields);
+  addGroup(t("template.section.pihak1"), [...person1, ...suspect1, ...ownerFields]);
+  addGroup(t("template.section.pihak2"), [...person2, ...suspect2, ...tenantFields]);
+  addGroup(t("template.section.tanggal"), dateFields);
+  addGroup(t("template.section.objek"), objectFields);
+  addGroup(t("template.section.harga"), moneyFields);
 
   const remaining = placeholders.filter((p) => !grouped.some((g) => g.fields.includes(p)));
   if (remaining.length > 0) {
-    grouped.push({ section: "Data Lainnya", fields: remaining });
+    grouped.push({ section: t("template.section.lainnya"), fields: remaining });
   }
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
       <div className="mb-8">
-        <span className="badge bg-green-100 text-green-700 mb-2">{template.category}</span>
-        <h1 className="text-3xl font-bold">{template.title}</h1>
-        <p className="text-gray-600 mt-2">{template.description}</p>
+        <span className="badge bg-green-100 text-green-700 dark:bg-gray-700 dark:text-green-300 mb-2">{template.category}</span>
+        <h1 className="text-3xl font-bold dark:text-gray-100">{template.title}</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">{template.description}</p>
       </div>
 
       {placeholders.length > 0 && (
         <div className="card mb-6">
-          <h2 className="text-lg font-semibold mb-4 border-b pb-2">Isi Data Surat</h2>
+          <h2 className="text-lg font-semibold mb-4 border-b pb-2 dark:text-gray-100 dark:border-gray-700">{t("template.formTitle")}</h2>
           <div className="space-y-6">
             {grouped.map((group) => (
               <div key={group.section}>
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">{group.section}</h3>
+                <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">{group.section}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {group.fields.map((ph) => {
                     const isTextarea = TEXTAREA_FIELDS.includes(ph);
@@ -304,7 +306,7 @@ export default function TemplateSuratDetail({ template }: { template: Template }
 
                     return (
                       <div key={ph} className={isTextarea ? "md:col-span-2" : ""}>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
                         {isTextarea ? (
                           <textarea
                             value={values[ph] || ""}
@@ -326,7 +328,7 @@ export default function TemplateSuratDetail({ template }: { template: Template }
                           />
                         )}
                         {isAmount && values[ph] && (
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             = {formatRupiah(values[ph])} rupiah — {terbilang(values[ph])}
                           </p>
                         )}
@@ -338,18 +340,18 @@ export default function TemplateSuratDetail({ template }: { template: Template }
             ))}
           </div>
 
-          <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t">
+          <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t dark:border-gray-700">
             <button onClick={applyValues} className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium">
-              Terapkan ke Surat
+              {t("template.apply")}
             </button>
             <button onClick={() => setShowAI(!showAI)} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium">
-              Bantuan AI
+              {t("template.aiHelp")}
             </button>
           </div>
 
           {showAI && (
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-700 mb-2">Ceritakan kasus Anda, AI akan membantu mengisi surat:</p>
+            <div className="mt-4 p-4 bg-blue-50 dark:bg-gray-700 rounded-lg">
+              <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">{t("template.aiHint")}</p>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -357,14 +359,14 @@ export default function TemplateSuratDetail({ template }: { template: Template }
                   onChange={(e) => setAiInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleAIAssist()}
                   className="input-field flex-1"
-                  placeholder="Contoh: Saya ingin menyewakan ruko selama 2 tahun..."
+                  placeholder={t("template.aiExample")}
                 />
                 <button onClick={handleAIAssist} disabled={aiLoading || !aiInput.trim()} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-50">
-                  {aiLoading ? "Memproses..." : "Tanya AI"}
+                  {aiLoading ? t("template.aiLoading") : t("template.aiSend")}
                 </button>
               </div>
               {aiMessage && (
-                <p className={`text-sm mt-2 ${aiMessage.startsWith("AI") ? "text-green-700" : "text-blue-700"}`}>
+                <p className={`text-sm mt-2 ${aiMessage.startsWith("AI") ? "text-green-700 dark:text-green-300" : "text-blue-700 dark:text-blue-300"}`}>
                   {aiMessage}
                 </p>
               )}
@@ -374,13 +376,13 @@ export default function TemplateSuratDetail({ template }: { template: Template }
       )}
 
       <div className="card">
-        <div className="flex justify-between items-center mb-4 border-b pb-3">
-          <h2 className="text-lg font-semibold">Preview Surat</h2>
+        <div className="flex justify-between items-center mb-4 border-b pb-3 dark:border-gray-700">
+          <h2 className="text-lg font-semibold dark:text-gray-100">{t("template.preview")}</h2>
           <button onClick={handlePrint} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium text-sm">
-            Cetak / Download PDF
+            {t("template.print")}
           </button>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-8 font-serif text-sm leading-relaxed whitespace-pre-wrap min-h-[400px] max-h-[700px] overflow-y-auto">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 font-serif text-sm leading-relaxed whitespace-pre-wrap min-h-[400px] max-h-[700px] overflow-y-auto dark:text-gray-100">
           {preview}
         </div>
       </div>

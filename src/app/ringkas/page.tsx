@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n";
 
 function cleanMarkdown(raw: string): string {
   const lines = raw.split("\n");
@@ -47,6 +48,7 @@ function cleanMarkdown(raw: string): string {
 }
 
 export default function RingkasPage() {
+  const { t } = useI18n();
   const [input, setInput] = useState("");
   const [hasil, setHasil] = useState("");
   const [loading, setLoading] = useState(false);
@@ -63,9 +65,9 @@ export default function RingkasPage() {
         body: JSON.stringify({ text: input.trim() }),
       });
       const data = await res.json();
-      setHasil(cleanMarkdown(data.summary || "Gagal merangkum dokumen."));
+      setHasil(cleanMarkdown(data.summary || t("ringkas.gagal")));
     } catch {
-      setHasil("Gagal terhubung ke server. Silakan coba lagi.");
+      setHasil(t("ringkas.netError"));
     } finally {
       setLoading(false);
     }
@@ -73,22 +75,21 @@ export default function RingkasPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold mb-2">Ringkas Dokumen Hukum</h1>
-      <p className="text-gray-600 mb-8">
-        Tempel teks UU, peraturan, atau dokumen hukum lainnya, dapatkan ringkasan
-        dalam bahasa sederhana.
+      <h1 className="text-3xl font-bold mb-2 dark:text-gray-100">{t("ringkas.title")}</h1>
+      <p className="text-gray-600 dark:text-gray-400 mb-8">
+        {t("ringkas.subtitle")}
       </p>
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Teks Dokumen Hukum
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {t("ringkas.label")}
           </label>
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             rows={12}
-            placeholder="Tempel teks dokumen hukum di sini...&#10;&#10;Contoh: Pasal-pasal dari Undang-Undang, putusan pengadilan, atau peraturan daerah."
+            placeholder={t("ringkas.placeholder")}
             className="input-field resize-none"
           />
         </div>
@@ -98,19 +99,18 @@ export default function RingkasPage() {
           disabled={loading || !input.trim()}
           className="btn-primary disabled:opacity-50"
         >
-          {loading ? "Merangkum..." : "Ringkas Sekarang"}
+          {loading ? t("ringkas.loading") : t("ringkas.button")}
         </button>
 
         {hasil && (
-          <div className="card bg-teal-50 border border-teal-200">
-            <h3 className="font-semibold text-teal-800 mb-2">Ringkasan:</h3>
-            <div className="text-gray-700 whitespace-pre-wrap leading-loose">{hasil}</div>
+          <div className="card bg-teal-50 dark:bg-gray-800 border border-teal-200 dark:border-gray-700">
+            <h3 className="font-semibold text-teal-800 dark:text-teal-300 mb-2">{t("ringkas.result")}</h3>
+            <div className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-loose">{hasil}</div>
           </div>
         )}
 
-        <p className="text-xs text-gray-400">
-          ⚠️ Ringkasan dibuat oleh AI dan mungkin tidak 100% akurat. Selalu verifikasi
-          dengan dokumen asli.
+        <p className="text-xs text-gray-400 dark:text-gray-500">
+          {t("ringkas.warn")}
         </p>
       </div>
     </div>
