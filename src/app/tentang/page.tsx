@@ -20,8 +20,8 @@ const values = [
   },
   {
     icon: "🇮🇩",
-    title: "Hukum Indonesia",
-    desc: "Konten kami mengacu pada peraturan perundang-undangan yang berlaku di Indonesia: KUHPerdata, KUHP, UU Perlindungan Konsumen, UU Ketenagakerjaan, dan peraturan terkait lainnya.",
+    title: "Hukum Indonesia & Dunia",
+    desc: "Konten kami mencakup hukum positif Indonesia (KUHP, KUHPerdata, UU Perlindungan Konsumen, UU Ketenagakerjaan, dll.), hukum Islam (KHI, fatwa MUI), dan hukum internasional (konvensi PBB/OHCHR).",
   },
   {
     icon: "🔒",

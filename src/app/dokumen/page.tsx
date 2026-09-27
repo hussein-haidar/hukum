@@ -161,7 +161,9 @@ export default function DokumenPage() {
     <div className="max-w-5xl mx-auto px-4 py-12">
       <h1 className="text-3xl font-bold mb-2">Peraturan &amp; Dokumen Hukum</h1>
       <p className="text-gray-600 mb-8">
-        Kumpulan peraturan perundang-undangan Indonesia yang disinkronkan dari sumber resmi (Peraturan.go.id, JDIH).
+        Dokumen hukum dari berbagai sumber resmi: peraturan perundang-undangan
+        Indonesia (Peraturan.go.id, JDIH), hukum Islam (Fatwa MUI, JPI), dan
+        hukum internasional (UN, OHCHR, HukumOnline).
       </p>
 
       <div className="flex gap-2 mb-6">
@@ -324,6 +326,7 @@ export default function DokumenPage() {
         <PdfReader
           docId={readerDoc.id}
           title={readerDoc.judul}
+          sumberUrl={readerDoc.urlSumber}
           onClose={() => setReaderDoc(null)}
         />
       )}

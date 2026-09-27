@@ -9,9 +9,10 @@ interface PdfReaderProps {
   docId: number;
   title: string;
   onClose: () => void;
+  sumberUrl?: string | null;
 }
 
-export default function PdfReader({ docId, title, onClose }: PdfReaderProps) {
+export default function PdfReader({ docId, title, onClose, sumberUrl }: PdfReaderProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pdfRef = useRef<any>(null);
   const renderTaskRef = useRef<any>(null);
@@ -67,13 +68,18 @@ export default function PdfReader({ docId, title, onClose }: PdfReaderProps) {
         const base = pageObj.getViewport({ scale: 1 });
         const containerWidth = canvas.parentElement?.clientWidth || 600;
         const fit = containerWidth / base.width;
+        const cssScale = fit * zoom;
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        const finalScale = fit * zoom * dpr;
-        const viewport = pageObj.getViewport({ scale: finalScale });
+        const maxDim = 8000;
+        const safeDpr =
+          maxDim / (base.width * cssScale) < maxDim / (base.height * cssScale)
+            ? Math.min(dpr, maxDim / (base.width * cssScale))
+            : Math.min(dpr, maxDim / (base.height * cssScale));
+        const viewport = pageObj.getViewport({ scale: cssScale * safeDpr });
         canvas.width = viewport.width;
         canvas.height = viewport.height;
-        canvas.style.width = `${viewport.width / dpr}px`;
-        canvas.style.height = `${viewport.height / dpr}px`;
+        canvas.style.width = `${base.width * cssScale}px`;
+        canvas.style.height = `${base.height * cssScale}px`;
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
         const task = pageObj.render({ canvasContext: ctx, viewport });
@@ -116,9 +122,29 @@ export default function PdfReader({ docId, title, onClose }: PdfReaderProps) {
             >
               ↻ Coba Lagi
             </button>
+            <div className="flex flex-wrap justify-center gap-2">
+              <a
+                href={`/api/pdf?id=${docId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary"
+              >
+                📄 Buka PDF di tab baru
+              </a>
+              {sumberUrl && /^https?:\/\//i.test(sumberUrl) && (
+                <a
+                  href={sumberUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-secondary"
+                >
+                  🔗 Buka Halaman Sumber
+                </a>
+              )}
+            </div>
             <p className="text-xs text-gray-400">
-              Dokumen tidak bisa ditampilkan di dalam aplikasi. Anda bisa membukanya
-              lewat link <span className="font-medium">Sumber</span>.
+              Bila tetap gagal, kemungkinan server asal dokumen sedang
+              bermasalah. Anda tetap bisa membukanya lewat tombol di atas.
             </p>
           </div>
         ) : loading ? (

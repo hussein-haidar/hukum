@@ -16,10 +16,36 @@ export default function AdminTemplatePage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState({ title: "", slug: "", description: "", content: "", category: "Kuasa" });
   const [showForm, setShowForm] = useState(false);
+  const [templateVisible, setTemplateVisible] = useState(false);
+  const [savingVisible, setSavingVisible] = useState(false);
 
   useEffect(() => {
-    fetch("/api/template").then((r) => r.json()).then(setTemplates);
+    Promise.all([
+      fetch("/api/template").then((r) => r.json()),
+      fetch("/api/settings").then((r) => r.json()),
+    ]).then(([templatesData, settings]) => {
+      setTemplates(templatesData);
+      setTemplateVisible(!!settings.templateSuratVisible);
+    });
   }, []);
+
+  const toggleVisibility = async () => {
+    const next = !templateVisible;
+    setSavingVisible(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateSuratVisible: next }),
+      });
+      const data = await res.json();
+      if (data.success) setTemplateVisible(next);
+    } catch {
+      // biarkan state lama tetap
+    } finally {
+      setSavingVisible(false);
+    }
+  };
 
   const save = async () => {
     const method = editingId ? "PUT" : "POST";
@@ -56,9 +82,21 @@ export default function AdminTemplatePage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Kelola Template Surat</h1>
-        <button onClick={() => { setShowForm(!showForm); setEditingId(null); setForm({ title: "", slug: "", description: "", content: "", category: "Kuasa" }); }} className="btn-primary">
-          + Tambah Template
-        </button>
+        <div className="flex flex-wrap items-center gap-4">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={templateVisible}
+              onChange={toggleVisibility}
+              disabled={savingVisible}
+              className="w-4 h-4"
+            />
+            <span className="text-sm font-medium">Tampilkan di halaman publik</span>
+          </label>
+          <button onClick={() => { setShowForm(!showForm); setEditingId(null); setForm({ title: "", slug: "", description: "", content: "", category: "Kuasa" }); }} className="btn-primary">
+            + Tambah Template
+          </button>
+        </div>
       </div>
 
       {showForm && (
