@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as pdfjs from "pdfjs-dist";
+import { sanitizeText } from "@/lib/sanitize";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf/pdf.worker.min.js";
 
@@ -104,7 +105,7 @@ export default function PdfReader({ docId, title, onClose, sumberUrl }: PdfReade
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2 sm:p-4">
       <div className="bg-white w-full max-w-3xl h-[94vh] max-h-[94vh] rounded-2xl flex flex-col overflow-hidden">
         <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-200">
-          <h3 className="font-semibold text-sm truncate text-gray-800">{title}</h3>
+          <h3 className="font-semibold text-sm truncate text-gray-800">{sanitizeText(title)}</h3>
           <button
             onClick={onClose}
             className="btn-secondary !px-3 !py-1 text-sm flex-shrink-0"
@@ -159,40 +160,43 @@ export default function PdfReader({ docId, title, onClose, sumberUrl }: PdfReade
             <div className="flex-1 overflow-auto bg-gray-100 p-3 flex justify-center">
               <canvas ref={canvasRef} className="max-w-full shadow-lg rounded bg-white" />
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-2 px-4 py-2 border-t border-gray-200 text-sm">
-              <button
-                onClick={prevPage}
-                disabled={page <= 1}
-                className="btn-secondary !px-3 !py-1 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                ‹
-              </button>
-              <span className="text-gray-700">
-                Halaman {page} / {numPages}
-              </span>
-              <button
-                onClick={nextPage}
-                disabled={page >= numPages}
-                className="btn-secondary !px-3 !py-1 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                ›
-              </button>
-              <span className="mx-1 text-gray-300">|</span>
-              <button
-                onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2)))}
-                disabled={zoom <= 0.5}
-                className="btn-secondary !px-2 !py-1 disabled:opacity-40"
-              >
-                −
-              </button>
-              <span className="text-gray-700">{Math.round(zoom * 100)}%</span>
-              <button
-                onClick={() => setZoom((z) => Math.min(3, +(z + 0.25).toFixed(2)))}
-                disabled={zoom >= 3}
-                className="btn-secondary !px-2 !py-1 disabled:opacity-40"
-              >
-                +
-              </button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 px-4 py-2 border-t border-gray-200 text-sm">
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-center">
+                <button
+                  onClick={prevPage}
+                  disabled={page <= 1}
+                  className="btn-secondary !px-3 !py-2 disabled:opacity-40 disabled:cursor-not-allowed min-w-[44px]"
+                >
+                  ‹
+                </button>
+                <span className="text-gray-700 min-w-[80px] text-center">
+                  Halaman {page} / {numPages}
+                </span>
+                <button
+                  onClick={nextPage}
+                  disabled={page >= numPages}
+                  className="btn-secondary !px-3 !py-2 disabled:opacity-40 disabled:cursor-not-allowed min-w-[44px]"
+                >
+                  ›
+                </button>
+              </div>
+              <div className="flex items-center gap-1.5 w-full sm:w-auto justify-center">
+                <button
+                  onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2)))}
+                  disabled={zoom <= 0.5}
+                  className="btn-secondary !px-3 !py-2 disabled:opacity-40 min-w-[44px]"
+                >
+                  −
+                </button>
+                <span className="text-gray-700 min-w-[50px] text-center">{Math.round(zoom * 100)}%</span>
+                <button
+                  onClick={() => setZoom((z) => Math.min(3, +(z + 0.25).toFixed(2)))}
+                  disabled={zoom >= 3}
+                  className="btn-secondary !px-3 !py-2 disabled:opacity-40 min-w-[44px]"
+                >
+                  +
+                </button>
+              </div>
             </div>
           </>
         )}

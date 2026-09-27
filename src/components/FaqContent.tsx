@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useI18n } from "@/lib/i18n";
+import { sanitizeText } from "@/lib/sanitize";
 
 interface FAQ {
   id: number;
@@ -97,8 +98,8 @@ export default function FaqContent({ faqs }: { faqs: FAQ[] }) {
               className="w-full text-left flex justify-between items-start gap-4"
             >
               <div>
-                <span className="badge bg-blue-100 text-blue-700 dark:bg-gray-700 dark:text-blue-300 mb-2">{faq.category}</span>
-                <h3 className="font-semibold text-lg dark:text-gray-100">{faq.question}</h3>
+                <span className="badge bg-blue-100 text-blue-700 dark:bg-gray-700 dark:text-blue-300 mb-2">{sanitizeText(faq.category)}</span>
+                <h3 className="font-semibold text-lg dark:text-gray-100">{sanitizeText(faq.question)}</h3>
               </div>
               <span className="text-gray-400 text-2xl flex-shrink-0 mt-1">
                 {expandedId === faq.id ? "−" : "+"}
@@ -106,7 +107,7 @@ export default function FaqContent({ faqs }: { faqs: FAQ[] }) {
             </button>
             {expandedId === faq.id && (
               <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 text-gray-700 dark:text-gray-300 leading-relaxed">
-                {faq.answer}
+                {sanitizeText(faq.answer)}
               </div>
             )}
           </div>

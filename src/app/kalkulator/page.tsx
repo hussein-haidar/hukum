@@ -80,7 +80,7 @@ function PesangonCalc() {
           <option value="phk-mendadak">{t("kalkulator.phkMendadak")}</option>
         </select>
       </div>
-      <button onClick={hitung} className="btn-primary">{t("kalkulator.hitung")}</button>
+      <button onClick={hitung} className="btn-primary w-full sm:w-auto">{t("kalkulator.hitung")}</button>
       {hasil !== null && (
         <div className="bg-purple-50 dark:bg-gray-700 p-4 rounded-lg">
           <p className="text-sm text-gray-600 dark:text-gray-300">{t("kalkulator.estimasiPesangon")}</p>
@@ -118,7 +118,7 @@ function LemburCalc() {
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("kalkulator.jamLembur")}</label>
         <input type="number" value={jamLembur} onChange={(e) => setJamLembur(e.target.value)} className="input-field" placeholder="Contoh: 10" />
       </div>
-      <button onClick={hitung} className="btn-primary">{t("kalkulator.hitung")}</button>
+      <button onClick={hitung} className="btn-primary w-full sm:w-auto">{t("kalkulator.hitung")}</button>
       {hasil !== null && (
         <div className="bg-purple-50 dark:bg-gray-700 p-4 rounded-lg">
           <p className="text-sm text-gray-600 dark:text-gray-300">{t("kalkulator.totalLembur")}</p>
@@ -163,7 +163,7 @@ function CicilanCalc() {
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("kalkulator.tenor")}</label>
         <input type="number" value={tenor} onChange={(e) => setTenor(e.target.value)} className="input-field" placeholder="Contoh: 60" />
       </div>
-      <button onClick={hitung} className="btn-primary">{t("kalkulator.hitung")}</button>
+      <button onClick={hitung} className="btn-primary w-full sm:w-auto">{t("kalkulator.hitung")}</button>
       {hasil && (
         <div className="bg-purple-50 dark:bg-gray-700 p-4 rounded-lg space-y-2">
           <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-300">{t("kalkulator.angsuran")}</span><span className="font-bold dark:text-gray-100">Rp {hasil.angsuran.toLocaleString("id-ID")}</span></div>
@@ -208,7 +208,7 @@ function DendaCalc() {
           <option value="knalpot-racing">Knalpot Racing/Modifikasi</option>
         </select>
       </div>
-      <button onClick={hitung} className="btn-primary">{t("kalkulator.cekDenda")}</button>
+      <button onClick={hitung} className="btn-primary w-full sm:w-auto">{t("kalkulator.cekDenda")}</button>
       {hasil && (
         <div className="bg-purple-50 dark:bg-gray-700 p-4 rounded-lg">
           <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">{hasil.deskripsi}</p>

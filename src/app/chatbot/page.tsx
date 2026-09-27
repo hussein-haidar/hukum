@@ -123,7 +123,7 @@ export default function ChatbotPage() {
               className="input-field flex-1"
               disabled={loading}
             />
-            <button onClick={handleSend} disabled={loading || !input.trim()} className="btn-primary disabled:opacity-50">
+            <button onClick={handleSend} disabled={loading || !input.trim()} className="btn-primary disabled:opacity-50 w-full sm:w-auto">
               {t("chatbot.send")}
             </button>
           </div>

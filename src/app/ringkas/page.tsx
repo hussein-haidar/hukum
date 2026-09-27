@@ -97,7 +97,7 @@ export default function RingkasPage() {
         <button
           onClick={handleRingkas}
           disabled={loading || !input.trim()}
-          className="btn-primary disabled:opacity-50"
+          className="btn-primary disabled:opacity-50 w-full sm:w-auto"
         >
           {loading ? t("ringkas.loading") : t("ringkas.button")}
         </button>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
+import { sanitizeText } from "@/lib/sanitize";
 
 interface Glosarium {
   id: number;
@@ -74,8 +75,8 @@ export default function GlosariumContent({ glossaries }: { glossaries: Glosarium
                 {g.letter}
               </span>
               <div>
-                <h3 className="font-semibold text-lg dark:text-gray-100">{g.term}</h3>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">{g.definition}</p>
+                <h3 className="font-semibold text-lg dark:text-gray-100">{sanitizeText(g.term)}</h3>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">{sanitizeText(g.definition)}</p>
               </div>
             </div>
           </div>

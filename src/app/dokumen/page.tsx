@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import PdfReader from "@/components/PdfReader";
 import { useI18n } from "@/lib/i18n";
+import { sanitizeText } from "@/lib/sanitize";
 
 interface Dokumen {
   id: number;
@@ -280,15 +281,15 @@ export default function DokumenPage() {
                     <span className="badge bg-purple-100 text-purple-700 dark:bg-gray-700 dark:text-purple-300">{doc.instansi}</span>
                   )}
                 </div>
-                <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-100">{doc.judul}</h3>
+                <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-100">{sanitizeText(doc.judul)}</h3>
                 {doc.tentang && (
-                  <p className="text-gray-600 dark:text-gray-400 mt-1">{doc.tentang}</p>
+                  <p className="text-gray-600 dark:text-gray-400 mt-1">{sanitizeText(doc.tentang)}</p>
                 )}
-                <div className="flex flex-wrap gap-4 mt-3 text-sm">
+                <div className="flex flex-col sm:flex-row gap-2 mt-3 text-sm">
                   {doc.urlPdf && /^https?:\/\//i.test(doc.urlPdf) && (
                     <button
                       onClick={() => setReaderDoc(doc)}
-                      className="text-blue-600 dark:text-blue-400 hover:underline font-medium text-left"
+                      className="btn-primary !py-2 !px-4 text-sm whitespace-nowrap"
                     >
                       {t("dokumen.readPdf")}
                     </button>
@@ -298,12 +299,12 @@ export default function DokumenPage() {
                       href={doc.urlSumber}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-gray-600 dark:text-gray-300 hover:underline"
+                      className="btn-secondary !py-2 !px-4 text-sm whitespace-nowrap"
                     >
                       {t("dokumen.source")}
                     </a>
                   )}
-                  <span className="text-gray-400 dark:text-gray-500">{t("dokumen.sourceLabel").replace("%1", doc.source)}</span>
+                  <span className="text-gray-400 dark:text-gray-500 self-center sm:self-auto px-2">{t("dokumen.sourceLabel").replace("%1", doc.source)}</span>
                 </div>
               </div>
             ))}

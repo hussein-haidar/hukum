@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
+import { sanitizeText } from "@/lib/sanitize";
 
 interface Template {
   id: number;
@@ -286,9 +287,9 @@ export default function TemplateSuratDetail({ template }: { template: Template }
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
       <div className="mb-8">
-        <span className="badge bg-green-100 text-green-700 dark:bg-gray-700 dark:text-green-300 mb-2">{template.category}</span>
-        <h1 className="text-3xl font-bold dark:text-gray-100">{template.title}</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">{template.description}</p>
+        <span className="badge bg-green-100 text-green-700 dark:bg-gray-700 dark:text-green-300 mb-2">{sanitizeText(template.category)}</span>
+        <h1 className="text-3xl font-bold dark:text-gray-100">{sanitizeText(template.title)}</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">{sanitizeText(template.description)}</p>
       </div>
 
       {placeholders.length > 0 && (
@@ -383,7 +384,7 @@ export default function TemplateSuratDetail({ template }: { template: Template }
           </button>
         </div>
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 font-serif text-sm leading-relaxed whitespace-pre-wrap min-h-[400px] max-h-[700px] overflow-y-auto dark:text-gray-100">
-          {preview}
+          {sanitizeText(preview)}
         </div>
       </div>
     </div>
