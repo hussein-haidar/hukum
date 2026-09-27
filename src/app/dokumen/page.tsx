@@ -177,7 +177,7 @@ export default function DokumenPage() {
         {t("dokumen.subtitle")}
       </p>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-3">
         <input
           type="text"
           placeholder={t("dokumen.searchPlaceholder")}
@@ -197,6 +197,26 @@ export default function DokumenPage() {
           ⟳
         </button>
       </div>
+
+      {/* Petunjuk pencarian hukum Islam */}
+      <details className="mb-4 group">
+        <summary className="cursor-pointer text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+          <span>💡</span> Petunjuk pencarian hukum Islam &nbsp;
+          <span className="inline-block transition-transform group-open:rotate-90">▸</span>
+        </summary>
+        <div className="mt-2 p-3 bg-blue-50 dark:bg-gray-800 rounded-lg text-sm text-gray-700 dark:text-gray-300 space-y-1">
+          <p className="font-medium">Istilah umum → Istilah database:</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-xs">
+            <span>cerai islam → perceraian, talak</span>
+            <span>talak islam → talak, perceraian, khulu'</span>
+            <span>nikah islam → nikah, pernikahan, kawin</span>
+            <span>aqiqah → aqiqah (jika ada)</span>
+            <span>nafkah mantan istri → nafkah iddah, mut'ah</span>
+            <span>hak asuh anak → hak asuh anak, khadhanah</span>
+          </div>
+          <p className="mt-2">Ketik bebas, sistem akan memperluas ke istilah hukum yang sesuai.</p>
+        </div>
+      </details>
 
       <div
         className="flex flex-wrap gap-2 mb-8"

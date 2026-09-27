@@ -3,6 +3,42 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+// Sinonim pencarian: kata kunci pengguna -> istilah database
+const SEARCH_SYNONYMS: Record<string, string[]> = {
+  "cerai": ["perceraian", "talak"],
+  "cerai islam": ["perceraian", "talak", "khulu'", "fasakh"],
+  "talak": ["talak", "perceraian"],
+  "talak islam": ["talak", "perceraian", "khulu'", "fasakh"],
+  "nikah": ["nikah", "pernikahan", "kawin"],
+  "nikah islam": ["nikah", "pernikahan", "kawin", "walimatul 'urs"],
+  "aqiqah": ["aqiqah", "aqiquah", " akikah"],
+  "menafkahi": ["nafkah", "nafkah iddah", "nafkah mut'ah", "penghidupan"],
+  "menafkahi mantan istri": ["nafkah iddah", "nafkah mut'ah", "nafkah"],
+  "hak asuh": ["hak asuh anak", "asuh anak", "khadhanah"],
+  "hak asuh anak": ["hak asuh anak", "asuh anak", "khadhanah"],
+  "hak asuh anak islam": ["hak asuh anak", "asuh anak", "khadhanah", "perceraian"],
+  "asuh anak": ["asuh anak", "hak asuh anak", "khadhanah"],
+};
+
+function expandSearchTerms(raw: string): string[] {
+  const lower = raw.trim().toLowerCase();
+  const expanded = new Set<string>([raw.trim()]);
+  
+  // Cek sinonim exact match dulu
+  if (SEARCH_SYNONYMS[lower]) {
+    SEARCH_SYNONYMS[lower].forEach(t => expanded.add(t));
+  }
+  
+  // Cek partial match (kata kunci mengandung sinonim key)
+  for (const [key, vals] of Object.entries(SEARCH_SYNONYMS)) {
+    if (lower.includes(key)) {
+      vals.forEach(t => expanded.add(t));
+    }
+  }
+  
+  return Array.from(expanded);
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -11,13 +47,15 @@ export async function GET(req: Request) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const pageSize = 20;
 
+    const searchTerms = expandSearchTerms(search);
+
     const searchWhere: any = search
       ? {
-          OR: [
-            { judul: { contains: search, mode: "insensitive" } },
-            { tentang: { contains: search, mode: "insensitive" } },
-            { nomor: { contains: search, mode: "insensitive" } },
-          ],
+          OR: searchTerms.flatMap((term) => [
+            { judul: { contains: term, mode: "insensitive" } },
+            { tentang: { contains: term, mode: "insensitive" } },
+            { nomor: { contains: term, mode: "insensitive" } },
+          ]),
         }
       : {};
 

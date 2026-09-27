@@ -1,43 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { fetchPdfWithRetry } from "@/lib/pdf-fetch";
 
 export const dynamic = "force-dynamic";
-
-const PDF_SIGNATURE = "%PDF-";
-
-async function fetchPdf(url: string): Promise<ArrayBuffer> {
-  let lastErr: any = new Error("Gagal mengambil PDF");
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (attempt > 0) {
-      await new Promise((r) => setTimeout(r, 1500 * attempt));
-    }
-    try {
-      const res = await fetch(url, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-          Accept: "application/pdf,*/*;q=0.8",
-        },
-        signal: AbortSignal.timeout(60000),
-      });
-      if (!res.ok) {
-        lastErr = new Error(`HTTP ${res.status}`);
-        continue;
-      }
-      const buf = await res.arrayBuffer();
-      const head = new Uint8Array(buf.slice(0, Math.min(5, buf.byteLength)));
-      const signature = String.fromCharCode.apply(null, head as any);
-      if (buf.byteLength < 10 || signature !== PDF_SIGNATURE) {
-        lastErr = new Error("Response bukan PDF (server sumber salah mengirim)");
-        continue;
-      }
-      return buf;
-    } catch (e: any) {
-      lastErr = e;
-    }
-  }
-  throw lastErr;
-}
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -55,7 +20,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const buf = await fetchPdf(doc.urlPdf);
+    const buf = await fetchPdfWithRetry(doc.urlPdf);
     return new NextResponse(new Uint8Array(buf), {
       headers: {
         "Content-Type": "application/pdf",
