@@ -64,9 +64,14 @@ export default function DokumenPage() {
         if (data.success) {
           setDocuments(data.data);
           setMeta(data.meta);
-          setJenisList(
-            (data.jenisList as JenisCount[]).map((j) => j.jenis).filter((j) => j.trim() !== "")
-          );
+          const nextJenisList = (data.jenisList as JenisCount[])
+            .map((j) => j.jenis)
+            .filter((j) => j.trim() !== "");
+          setJenisList(nextJenisList);
+          // Jika kategori yang terpilih tidak lagi tersedia untuk kata kunci ini
+          // (mis. chip lama diklik saat jeda debounce), batalkan pilihannya agar
+          // tidak menghasilkan kombinasi kosong yang membingungkan.
+          if (jenis && !nextJenisList.includes(jenis)) setJenis("");
         } else {
           setError(data.message || "Gagal memuat data");
         }
@@ -100,7 +105,7 @@ export default function DokumenPage() {
     const t = setTimeout(() => {
       setSearch(searchInput);
       setMeta((m) => ({ ...m, page: 1 }));
-    }, 600);
+    }, 350);
     return () => clearTimeout(t);
   }, [searchInput, search]);
 
