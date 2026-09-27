@@ -200,21 +200,40 @@ export default function DokumenPage() {
 
       {/* Petunjuk pencarian hukum Islam */}
       <details className="mb-4 group">
-        <summary className="cursor-pointer text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
-          <span>💡</span> Petunjuk pencarian hukum Islam &nbsp;
-          <span className="inline-block transition-transform group-open:rotate-90">▸</span>
+        <summary className="cursor-pointer text-sm text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 flex items-center gap-1.5 select-none list-none p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+          <span className="text-base">💡</span>
+          <span className="font-medium">Petunjuk pencarian hukum Islam</span>
+          <span className="inline-block ml-auto transition-transform group-open:rotate-90 text-gray-500 dark:text-gray-400">▸</span>
         </summary>
-        <div className="mt-2 p-3 bg-blue-50 dark:bg-gray-800 rounded-lg text-sm text-gray-700 dark:text-gray-300 space-y-1">
-          <p className="font-medium">Istilah umum → Istilah database:</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-xs">
-            <span>cerai islam → perceraian, talak</span>
-            <span>talak islam → talak, perceraian, khulu'</span>
-            <span>nikah islam → nikah, pernikahan, kawin</span>
-            <span>aqiqah → aqiqah (jika ada)</span>
-            <span>nafkah mantan istri → nafkah iddah, mut'ah</span>
-            <span>hak asuh anak → hak asuh anak, khadhanah</span>
+        <div className="mt-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 text-sm text-gray-700 dark:text-gray-300 space-y-2">
+          <p className="font-medium text-blue-900 dark:text-blue-100">Istilah umum → Istilah database:</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2 text-xs">
+            <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-100 dark:border-blue-800">
+              <span className="font-medium text-gray-900 dark:text-gray-100">cerai islam</span>
+              <span className="text-gray-600 dark:text-gray-400 ml-1">→ perceraian, talak</span>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-100 dark:border-blue-800">
+              <span className="font-medium text-gray-900 dark:text-gray-100">talak islam</span>
+              <span className="text-gray-600 dark:text-gray-400 ml-1">→ talak, perceraian, khulu'</span>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-100 dark:border-blue-800">
+              <span className="font-medium text-gray-900 dark:text-gray-100">nikah islam</span>
+              <span className="text-gray-600 dark:text-gray-400 ml-1">→ nikah, pernikahan, kawin</span>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-100 dark:border-blue-800">
+              <span className="font-medium text-gray-900 dark:text-gray-100">aqiqah</span>
+              <span className="text-gray-600 dark:text-gray-400 ml-1">→ aqiqah (jika ada)</span>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-100 dark:border-blue-800">
+              <span className="font-medium text-gray-900 dark:text-gray-100">nafkah mantan istri</span>
+              <span className="text-gray-600 dark:text-gray-400 ml-1">→ nafkah iddah, mut'ah</span>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-2 rounded-lg border border-blue-100 dark:border-blue-800">
+              <span className="font-medium text-gray-900 dark:text-gray-100">hak asuh anak</span>
+              <span className="text-gray-600 dark:text-gray-400 ml-1">→ hak asuh anak, khadhanah</span>
+            </div>
           </div>
-          <p className="mt-2">Ketik bebas, sistem akan memperluas ke istilah hukum yang sesuai.</p>
+          <p className="text-gray-600 dark:text-gray-400 text-xs mt-1">Ketik bebas, sistem akan memperluas ke istilah hukum yang sesuai.</p>
         </div>
       </details>
 
