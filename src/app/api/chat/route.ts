@@ -1,6 +1,53 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getApiKey } from "@/lib/apikey";
+import { getUserFromRequest } from "@/lib/user-auth";
+import { Prisma } from "@prisma/client";
+
+interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+async function saveOrUpdateHistory(
+  userId: number,
+  historyId: number | null | undefined,
+  message: string,
+  answer: string
+) {
+  const historyMessages: Prisma.InputJsonValue[] = [
+    { role: "user", content: message },
+    { role: "assistant", content: answer },
+  ];
+
+  if (historyId) {
+    const existing = await prisma.chatHistory.findFirst({
+      where: { id: historyId, userId },
+    });
+    if (!existing) return null;
+
+    const messages = Array.isArray(existing.messages)
+      ? (existing.messages as unknown as ChatMessage[])
+      : [];
+    messages.push(
+      { role: "user", content: message },
+      { role: "assistant", content: answer }
+    );
+
+    return prisma.chatHistory.update({
+      where: { id: existing.id },
+      data: { messages: messages as unknown as Prisma.InputJsonValue },
+    });
+  }
+
+  return prisma.chatHistory.create({
+    data: {
+      userId,
+      title: message.slice(0, 60),
+      messages: historyMessages as Prisma.InputJsonValue,
+    },
+  });
+}
 
 function matchesLocal(faq: any, message: string): boolean {
   const lowerMsg = message.toLowerCase();
@@ -221,11 +268,22 @@ function hierarchyWeight(jenis: string): number {
 
 export async function POST(req: Request) {
   try {
-    const { message } = await req.json();
+    const user = await getUserFromRequest(req);
+    if (!user) {
+      return NextResponse.json(
+        { answer: "Anda harus login untuk menggunakan chatbot.", needsAuth: true },
+        { status: 401 }
+      );
+    }
+
+    const body = await req.json();
+    const { message, historyId } = body;
 
     if (!message || message.trim().length < 3) {
       return NextResponse.json({ answer: "Silakan masukkan pertanyaan yang valid." });
     }
+
+    let answer = "";
 
     const [faqs, glossaries] = await Promise.all([
       prisma.fAQ.findMany({ orderBy: { createdAt: "desc" } }),
@@ -235,97 +293,98 @@ export async function POST(req: Request) {
     const localMatch = faqs.find((f) => matchesLocal(f, message));
 
     if (localMatch) {
-      return NextResponse.json({
-        answer: cleanMarkdown(
-          localMatch.answer +
-            "\n\nJawaban ini berdasarkan database FAQ. Untuk kasus spesifik, silakan konsultasi dengan advokat."
-        ),
-      });
+      answer = cleanMarkdown(
+        localMatch.answer +
+          "\n\nJawaban ini berdasarkan database FAQ. Untuk kasus spesifik, silakan konsultasi dengan advokat."
+      );
     }
 
-    const glossaryMatch = glossaries.find((g) =>
-      message.toLowerCase().includes(g.term.toLowerCase())
-    );
+    if (!answer) {
+      const glossaryMatch = glossaries.find((g) =>
+        message.toLowerCase().includes(g.term.toLowerCase())
+      );
 
-    if (glossaryMatch) {
-      return NextResponse.json({
-        answer: cleanMarkdown(
+      if (glossaryMatch) {
+        answer = cleanMarkdown(
           `${glossaryMatch.term} adalah: ${glossaryMatch.definition}\n\nUntuk informasi lebih lanjut, silakan konsultasi dengan advokat atau penasihat hukum.`
-        ),
-      });
+        );
+      }
     }
 
     let sourceDocs: any[] = [];
     let legalContext = "";
-    try {
-      const searchTerms = searchLegalDocuments(message);
-      if (searchTerms) {
-        const words = searchTerms.split(" ");
+    if (!answer) {
+      try {
+        const searchTerms = searchLegalDocuments(message);
+        if (searchTerms) {
+          const words = searchTerms.split(" ");
 
-        const orConditions = words.flatMap((word) => [
-          { judul: { contains: word, mode: "insensitive" as const } },
-          { tentang: { contains: word, mode: "insensitive" as const } },
-          { jenis: { contains: word, mode: "insensitive" as const } },
-        ]);
+          const orConditions = words.flatMap((word) => [
+            { judul: { contains: word, mode: "insensitive" as const } },
+            { tentang: { contains: word, mode: "insensitive" as const } },
+            { jenis: { contains: word, mode: "insensitive" as const } },
+          ]);
 
-        const docs = await prisma.legalDocument.findMany({
-          where: {
-            OR: orConditions.slice(0, 20),
-          },
-          orderBy: { tahun: "desc" },
-        });
+          const docs = await prisma.legalDocument.findMany({
+            where: {
+              OR: orConditions.slice(0, 20),
+            },
+            orderBy: { tahun: "desc" },
+          });
 
-        const scored = docs.map((d) => ({ doc: d, score: scoreDocument(d, words) }));
+          const scored = docs.map((d) => ({ doc: d, score: scoreDocument(d, words) }));
 
-        // Prioritas tinggi: peraturan yang berlaku (+ fatwa sebagai pelengkap).
-        const mainDocs = scored
-          .filter((s) => s.score >= 2 && !isAcademicJenis(s.doc.jenis))
-          .sort((a, b) => {
-            const hb = hierarchyWeight(b.doc.jenis) - hierarchyWeight(a.doc.jenis);
-            if (hb !== 0) return hb;
-            return b.score - a.score;
-          })
-          .slice(0, 5);
+          // Prioritas tinggi: peraturan yang berlaku (+ fatwa sebagai pelengkap).
+          const mainDocs = scored
+            .filter((s) => s.score >= 2 && !isAcademicJenis(s.doc.jenis))
+            .sort((a, b) => {
+              const hb = hierarchyWeight(b.doc.jenis) - hierarchyWeight(a.doc.jenis);
+              if (hb !== 0) return hb;
+              return b.score - a.score;
+            })
+            .slice(0, 5);
 
-        // Cadangan: artikel/naskah akademis, hanya bila tidak ada peraturan.
-        const academicDocs = scored
-          .filter((s) => s.score >= 2 && isAcademicJenis(s.doc.jenis))
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 3);
+          // Cadangan: artikel/naskah akademis, hanya bila tidak ada peraturan.
+          const academicDocs = scored
+            .filter((s) => s.score >= 2 && isAcademicJenis(s.doc.jenis))
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 3);
 
-        const topDocs = mainDocs.length > 0 ? mainDocs : academicDocs;
+          const topDocs = mainDocs.length > 0 ? mainDocs : academicDocs;
 
-        if (topDocs.length > 0) {
-          sourceDocs = topDocs.map((s) => s.doc);
-          legalContext =
-            "\n\nData Peraturan Relevan (referensi):\n" +
-            topDocs
-              .map(
-                (s, i) =>
-                  `${i + 1}. ${formatDocNumber(s.doc)}${docNote(s.doc)}\n   Judul: ${s.doc.judul}\n   Tentang: ${s.doc.tentang || "-"}\n   Status: ${s.doc.status}`
-              )
-              .join("\n");
+          if (topDocs.length > 0) {
+            sourceDocs = topDocs.map((s) => s.doc);
+            legalContext =
+              "\n\nData Peraturan Relevan (referensi):\n" +
+              topDocs
+                .map(
+                  (s, i) =>
+                    `${i + 1}. ${formatDocNumber(s.doc)}${docNote(s.doc)}\n   Judul: ${s.doc.judul}\n   Tentang: ${s.doc.tentang || "-"}\n   Status: ${s.doc.status}`
+                )
+                .join("\n");
+          }
         }
+      } catch (err) {
+        console.error("Legal search error:", err);
       }
-    } catch (err) {
-      console.error("Legal search error:", err);
     }
 
-    const apiKey = await getApiKey();
-    if (apiKey && apiKey.startsWith("gsk_")) {
-      try {
-        const Groq = (await import("groq-sdk")).default;
-        const groq = new Groq({ apiKey });
+    if (!answer) {
+      const apiKey = await getApiKey();
+      if (apiKey && apiKey.startsWith("gsk_")) {
+        try {
+          const Groq = (await import("groq-sdk")).default;
+          const groq = new Groq({ apiKey });
 
-        const faqContext = faqs
-          .map((f, i) => `${i + 1}. ${f.question}\n   ${f.answer}`)
-          .join("\n\n");
+          const faqContext = faqs
+            .map((f, i) => `${i + 1}. ${f.question}\n   ${f.answer}`)
+            .join("\n\n");
 
-        const glossaryContext = glossaries
-          .map((g) => `${g.term}: ${g.definition}`)
-          .join("\n");
+          const glossaryContext = glossaries
+            .map((g) => `${g.term}: ${g.definition}`)
+            .join("\n");
 
-        const prompt = `Kamu adalah asisten hukum Indonesia bernama HukumKu AI yang ahli di bidang hukum Indonesia.
+          const prompt = `Kamu adalah asisten hukum Indonesia bernama HukumKu AI yang ahli di bidang hukum Indonesia.
 
 Instruksi:
 1. Jawab pertanyaan pengguna secara langsung, jelas, dan spesifik sesuai topik yang ditanyakan.
@@ -352,42 +411,54 @@ Pertanyaan pengguna: ${message}
 
 Jawaban:`;
 
-        const result = await groq.chat.completions.create({
-          messages: [{ role: "user", content: prompt }],
-          model: "openai/gpt-oss-20b",
-        });
+          const result = await groq.chat.completions.create({
+            messages: [{ role: "user", content: prompt }],
+            model: "openai/gpt-oss-20b",
+          });
 
-        const rawAnswer = result.choices[0]?.message?.content || "Maaf, tidak ada jawaban dari AI.";
+          const rawAnswer = result.choices[0]?.message?.content || "Maaf, tidak ada jawaban dari AI.";
 
-        let answer = rawAnswer;
-        if (sourceDocs.length > 0) {
-          answer += `\n\nSumber Dokumen Terkait:\n${formatSources(sourceDocs)}`;
+          answer = rawAnswer;
+          if (sourceDocs.length > 0) {
+            answer += `\n\nSumber Dokumen Terkait:\n${formatSources(sourceDocs)}`;
+          }
+        } catch (aiError: any) {
+          console.error("Groq AI error:", aiError.message);
         }
-
-        return NextResponse.json({ answer: cleanMarkdown(answer) });
-      } catch (aiError: any) {
-        console.error("Groq AI error:", aiError.message);
       }
     }
 
-    let fallbackAnswer = "";
-    if (sourceDocs.length > 0) {
-      fallbackAnswer = `Peraturan terkait yang kami temukan di database:\n${formatSources(sourceDocs)}`;
-    } else {
-      fallbackAnswer =
-        "Maaf, layanan AI sedang tidak tersedia saat ini dan tidak ditemukan peraturan spesifik di database kami terkait pertanyaan Anda.";
-    }
+    if (!answer) {
+      if (sourceDocs.length > 0) {
+        answer = `Peraturan terkait yang kami temukan di database:\n${formatSources(sourceDocs)}`;
+      } else {
+        answer =
+          "Maaf, layanan AI sedang tidak tersedia saat ini dan tidak ditemukan peraturan spesifik di database kami terkait pertanyaan Anda.";
+      }
 
-    fallbackAnswer += `\n\nSaran:
+      answer += `\n\nSaran:
 1. Kunjungi https://peraturan.go.id untuk database peraturan nasional
 2. Kunjungi https://jdihn.go.id untuk JDIH Nasional
 3. Hubungi LBH (Lembaga Bantuan Hukum) terdekat untuk konsultasi gratis
 4. Konsultasi dengan advokat/penasihat hukum untuk kasus spesifik
 
 Jawaban ini bersifat informatif dan bukan pengganti konsultasi hukum profesional.`;
+    }
 
-    return NextResponse.json({ answer: cleanMarkdown(fallbackAnswer) });
+    answer = cleanMarkdown(answer);
 
+    const history = await saveOrUpdateHistory(
+      user.id,
+      historyId,
+      message,
+      answer
+    );
+
+    return NextResponse.json({
+      answer,
+      historyId: history?.id ?? null,
+      title: history?.title ?? null,
+    });
   } catch (error) {
     console.error("Chat error:", error);
     return NextResponse.json({

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth-context";
 import ThemeToggle from "./ThemeToggle";
 import LangToggle from "./LangToggle";
 
@@ -16,6 +17,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [templateVisible, setTemplateVisible] = useState(false);
   const { t } = useI18n();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     fetch("/api/settings")
@@ -83,6 +85,29 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-2">
             <LangToggle />
             <ThemeToggle />
+            {user ? (
+              <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[140px] truncate">
+                  {user.name || user.email}
+                </span>
+                <button
+                  onClick={logout}
+                  className="text-sm text-red-500 hover:text-red-600 font-medium"
+                  title={t("auth.logout")}
+                >
+                  {t("auth.logout")}
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
+                <Link href="/login" className="btn-secondary !py-1.5 !px-3 text-sm">
+                  {t("auth.login")}
+                </Link>
+                <Link href="/register" className="btn-primary !py-1.5 !px-3 text-sm">
+                  {t("auth.register")}
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -100,6 +125,39 @@ export default function Navbar() {
             <Link href="/bantuan-hukum" className={mobileLinkClass} onClick={() => setIsOpen(false)}>{t("nav.bantuan")}</Link>
             <Link href="/chatbot" className={mobileLinkClass} onClick={() => setIsOpen(false)}>{t("nav.chatbot")}</Link>
             <Link href="/ringkas" className={mobileLinkClass} onClick={() => setIsOpen(false)}>{t("nav.ringkas")}</Link>
+            {user ? (
+              <div className="px-3 py-2 flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                  👤 {user.name || user.email}
+                </span>
+                <button
+                  onClick={() => {
+                    logout();
+                    setIsOpen(false);
+                  }}
+                  className="text-sm text-red-500 hover:text-red-600 font-medium"
+                >
+                  {t("auth.logout")}
+                </button>
+              </div>
+            ) : (
+              <div className="px-3 py-2 flex items-center gap-2">
+                <Link
+                  href="/login"
+                  onClick={() => setIsOpen(false)}
+                  className="flex-1 text-center btn-secondary !py-2 text-sm"
+                >
+                  {t("auth.login")}
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={() => setIsOpen(false)}
+                  className="flex-1 text-center btn-primary !py-2 text-sm"
+                >
+                  {t("auth.register")}
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       )}

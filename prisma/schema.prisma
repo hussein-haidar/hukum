@@ -42,6 +42,29 @@ model Admin {
   resetExpires   DateTime?
 }
 
+model User {
+  id            Int           @id @default(autoincrement())
+  name          String?
+  email         String        @unique
+  password      String?
+  googleId      String?       @unique
+  picture       String?
+  createdAt     DateTime      @default(now())
+  chatHistories ChatHistory[]
+}
+
+model ChatHistory {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String
+  messages  Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 model LegalDocument {
   id          Int      @id @default(autoincrement())
   source      String

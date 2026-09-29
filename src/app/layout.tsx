@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { LanguageProvider } from "@/lib/i18n";
+import { AuthProvider } from "@/lib/auth-context";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -27,9 +28,11 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <ThemeProvider>
           <LanguageProvider>
-            <Navbar />
-            <main className="min-h-screen">{children}</main>
-            <Footer />
+            <AuthProvider>
+              <Navbar />
+              <main className="min-h-screen">{children}</main>
+              <Footer />
+            </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>
       </body>
