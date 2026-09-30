@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { fetchPdfWithRetry } from "@/lib/pdf-fetch";
+import { getUserFromRequest, verifyUserToken } from "@/lib/user-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,13 @@ export async function GET(req: Request) {
   const id = Number(searchParams.get("id") || "");
   if (!Number.isInteger(id) || id <= 0) {
     return new NextResponse("Missing id", { status: 400 });
+  }
+
+  const user =
+    (await getUserFromRequest(req)) ||
+    (await verifyUserToken(searchParams.get("token")));
+  if (!user) {
+    return new NextResponse("Login diperlukan untuk membaca PDF", { status: 401 });
   }
 
   const doc = await prisma.legalDocument.findUnique({

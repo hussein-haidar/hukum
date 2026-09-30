@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import PdfReader from "@/components/PdfReader";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth-context";
 import { sanitizeText } from "@/lib/sanitize";
 
 interface Dokumen {
@@ -33,6 +35,8 @@ interface JenisCount {
 
 export default function DokumenPage() {
   const { t } = useI18n();
+  const router = useRouter();
+  const { user } = useAuth();
   const CAT_WINDOW = 8;
   const CAT_INTERVAL_MS = 4000;
 
@@ -387,7 +391,11 @@ export default function DokumenPage() {
                 <div className="flex flex-col sm:flex-row gap-2 mt-3 text-sm">
                   {doc.urlPdf && /^https?:\/\//i.test(doc.urlPdf) ? (
                     <button
-                      onClick={() => setReaderDoc(doc)}
+                      onClick={() =>
+                        user
+                          ? setReaderDoc(doc)
+                          : router.push("/login?next=/dokumen")
+                      }
                       className="btn-primary !py-2 !px-4 text-sm whitespace-nowrap"
                     >
                       {t("dokumen.readPdf")}

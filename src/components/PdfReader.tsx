@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import * as pdfjs from "pdfjs-dist";
 import { sanitizeText } from "@/lib/sanitize";
 
@@ -24,6 +25,7 @@ interface PdfReaderProps {
 }
 
 export default function PdfReader({ docId, title, onClose, sumberUrl }: PdfReaderProps) {
+  const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pdfRef = useRef<any>(null);
   const renderTaskRef = useRef<any>(null);
@@ -33,16 +35,32 @@ export default function PdfReader({ docId, title, onClose, sumberUrl }: PdfReade
   const [zoom, setZoom] = useState<number | "auto">("auto");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [needsAuth, setNeedsAuth] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+
+  const getToken = () => {
+    try {
+      return window.localStorage.getItem("hukumku_user_token");
+    } catch {
+      return null;
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError("");
+    setNeedsAuth(false);
     setPage(1);
     setZoom("auto");
-    fetch(`/api/pdf?id=${docId}&r=${reloadKey}`)
+    const token = getToken();
+    fetch(`/api/pdf?id=${docId}&r=${reloadKey}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
       .then((r) => {
+        if (r.status === 401) {
+          throw new Error("NEEDS_AUTH");
+        }
         if (!r.ok) throw new Error(`Gagal memuat PDF (${r.status})`);
         return r.arrayBuffer();
       })
@@ -58,7 +76,11 @@ export default function PdfReader({ docId, title, onClose, sumberUrl }: PdfReade
       })
       .catch((e) => {
         if (cancelled) return;
-        setError(e?.message || "Gagal membaca PDF");
+        if (e?.message === "NEEDS_AUTH") {
+          setNeedsAuth(true);
+        } else {
+          setError(e?.message || "Gagal membaca PDF");
+        }
         setLoading(false);
       });
     return () => {
@@ -149,41 +171,59 @@ export default function PdfReader({ docId, title, onClose, sumberUrl }: PdfReade
   const zoomDisplay = zoom === "auto" ? "Otomatis" : `${Math.round(Number(zoom) * 100)}%`;
 
   // Render functions
-  const renderError = () => (
-    <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
-      <p className="text-sm text-red-600">⚠️ {error}</p>
-      <button
-        onClick={() => setReloadKey((k) => k + 1)}
-        className="btn-secondary"
-      >
-        ↻ Coba Lagi
-      </button>
-      <div className="flex flex-wrap justify-center gap-2">
-        <a
-          href={`/api/pdf?id=${docId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-primary"
+  const renderError = () => {
+    if (needsAuth) {
+      return (
+        <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            🔐 Login diperlukan untuk membaca PDF.
+          </p>
+          <button
+            onClick={() => router.push("/login?next=/dokumen")}
+            className="btn-primary"
+          >
+            Masuk / Daftar
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
+        <p className="text-sm text-red-600">⚠️ {error}</p>
+        <button
+          onClick={() => setReloadKey((k) => k + 1)}
+          className="btn-secondary"
         >
-          📄 Buka PDF di tab baru
-        </a>
-        {sumberUrl && /^https?:\/\//i.test(sumberUrl) && (
+          ↻ Coba Lagi
+        </button>
+        <div className="flex flex-wrap justify-center gap-2">
           <a
-            href={sumberUrl}
+            href={`/api/pdf?id=${docId}&token=${encodeURIComponent(getToken() || "")}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-secondary"
+            className="btn-primary"
           >
-            🔗 Buka Halaman Sumber
+            📄 Buka PDF di tab baru
           </a>
-        )}
+          {sumberUrl && /^https?:\/\//i.test(sumberUrl) && (
+            <a
+              href={sumberUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secondary"
+            >
+              🔗 Buka Halaman Sumber
+            </a>
+          )}
+        </div>
+        <p className="text-xs text-gray-400">
+          Bila tetap gagal, kemungkinan server asal dokumen sedang
+          bermasalah. Anda tetap bisa membukanya lewat tombol di atas.
+        </p>
       </div>
-      <p className="text-xs text-gray-400">
-        Bila tetap gagal, kemungkinan server asal dokumen sedang
-        bermasalah. Anda tetap bisa membukanya lewat tombol di atas.
-      </p>
-    </div>
-  );
+    );
+  };
 
   const renderLoading = () => (
     <div className="flex h-full items-center justify-center text-sm text-gray-500">
