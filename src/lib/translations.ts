@@ -141,6 +141,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "template.aiGagal": "Gagal memperoleh jawaban dari AI. Silakan coba lagi.",
     "template.aiNetError": "Gagal terhubung ke AI. Silakan coba lagi.",
     "template.aiExample": "Contoh: Saya ingin menyewakan ruko selama 2 tahun...",
+    "template.aiLoginRequired":
+      "Bantuan AI untuk mengisi surat memerlukan login. Silakan masuk atau daftar terlebih dahulu.",
     "template.preview": "Preview Surat",
     "template.print": "Cetak / Download PDF",
     "template.section.pihak1": "Pihak 1 / Penggugat / Penyewa",
@@ -185,6 +187,9 @@ export const translations: Record<Lang, Record<string, string>> = {
       "Tempel teks dokumen hukum di sini...\n\nContoh: Pasal-pasal dari Undang-Undang, putusan pengadilan, atau peraturan daerah.",
     "ringkas.gagal": "Gagal merangkum dokumen.",
     "ringkas.netError": "Gagal terhubung ke server. Silakan coba lagi.",
+    "ringkas.loginRequired": "Login Diperlukan",
+    "ringkas.loginRequiredDesc":
+      "Untuk menggunakan fitur ringkas dokumen berbasis AI, silakan masuk terlebih dahulu.",
 
     "kalkulator.title": "Kalkulator Hukum",
     "kalkulator.subtitle": "Hitung berbagai simulasi hukum dengan mudah",
@@ -412,6 +417,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "template.aiGagal": "Failed to get an answer from the AI. Please try again.",
     "template.aiNetError": "Failed to connect to the AI. Please try again.",
     "template.aiExample": "Example: I want to rent out a shophouse for 2 years...",
+    "template.aiLoginRequired":
+      "AI assistance for filling out letters requires login. Please login or sign up first.",
     "template.preview": "Letter Preview",
     "template.print": "Print / Download PDF",
     "template.section.pihak1": "Party 1 / Plaintiff / Tenant",
@@ -456,6 +463,9 @@ export const translations: Record<Lang, Record<string, string>> = {
       "Paste the legal document text here...\n\nExample: Articles from a statute, court decisions, or regional regulations.",
     "ringkas.gagal": "Failed to summarize the document.",
     "ringkas.netError": "Failed to connect to the server. Please try again.",
+    "ringkas.loginRequired": "Login Required",
+    "ringkas.loginRequiredDesc":
+      "To use the AI document summarizer, please login first.",
 
     "kalkulator.title": "Legal Calculator",
     "kalkulator.subtitle": "Calculate various legal simulations easily",

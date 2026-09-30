@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth-context";
 
 function cleanMarkdown(raw: string): string {
   const lines = raw.split("\n");
@@ -49,6 +51,8 @@ function cleanMarkdown(raw: string): string {
 
 export default function RingkasPage() {
   const { t } = useI18n();
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [input, setInput] = useState("");
   const [hasil, setHasil] = useState("");
   const [loading, setLoading] = useState(false);
@@ -59,11 +63,19 @@ export default function RingkasPage() {
     setHasil("");
 
     try {
+      const token = window.localStorage.getItem("hukumku_user_token");
       const res = await fetch("/api/ai/ringkas", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ text: input.trim() }),
       });
+      if (res.status === 401) {
+        router.push("/login?next=/ringkas");
+        return;
+      }
       const data = await res.json();
       setHasil(cleanMarkdown(data.summary || t("ringkas.gagal")));
     } catch {
@@ -72,6 +84,42 @@ export default function RingkasPage() {
       setLoading(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center">
+        <div className="text-gray-500 dark:text-gray-400">Memuat...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <div className="text-6xl mb-4">🔐</div>
+        <h1 className="text-3xl font-bold mb-3 dark:text-gray-100">
+          {t("ringkas.loginRequired")}
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 mb-8">
+          {t("ringkas.loginRequiredDesc")}
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <button
+            onClick={() => router.push("/login?next=/ringkas")}
+            className="btn-primary"
+          >
+            {t("auth.login")}
+          </button>
+          <button
+            onClick={() => router.push("/register?next=/ringkas")}
+            className="btn-secondary"
+          >
+            {t("auth.register")}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">

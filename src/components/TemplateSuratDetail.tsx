@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth-context";
 import { sanitizeText } from "@/lib/sanitize";
 
 interface Template {
@@ -124,6 +126,8 @@ function formatRupiah(value: string): string {
 
 export default function TemplateSuratDetail({ template }: { template: Template }) {
   const { t } = useI18n();
+  const router = useRouter();
+  const { user } = useAuth();
   const [values, setValues] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState(template.content);
   const [showAI, setShowAI] = useState(false);
@@ -211,15 +215,23 @@ export default function TemplateSuratDetail({ template }: { template: Template }
     const fieldList = placeholders.join(", ");
 
     try {
+      const token = window.localStorage.getItem("hukumku_user_token");
       const res = await fetch("/api/ai/ringkas", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           mode: "form-fill",
           text: `Kasus/pengalaman: ${aiInput}\n\nSurat yang sedang diisi: ${template.title}\n\nKolom yang perlu diisi: ${fieldList}`,
           placeholders,
         }),
       });
+      if (res.status === 401) {
+        router.push("/login?next=/template-surat");
+        return;
+      }
       const data = await res.json();
 
       if (data.fields && Object.keys(data.fields).length > 0) {
@@ -352,24 +364,40 @@ export default function TemplateSuratDetail({ template }: { template: Template }
 
           {showAI && (
             <div className="mt-4 p-4 bg-blue-50 dark:bg-gray-700 rounded-lg">
-              <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">{t("template.aiHint")}</p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={aiInput}
-                  onChange={(e) => setAiInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAIAssist()}
-                  className="input-field flex-1"
-                  placeholder={t("template.aiExample")}
-                />
-                <button onClick={handleAIAssist} disabled={aiLoading || !aiInput.trim()} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-50">
-                  {aiLoading ? t("template.aiLoading") : t("template.aiSend")}
-                </button>
-              </div>
-              {aiMessage && (
-                <p className={`text-sm mt-2 ${aiMessage.startsWith("AI") ? "text-green-700 dark:text-green-300" : "text-blue-700 dark:text-blue-300"}`}>
-                  {aiMessage}
-                </p>
+              {user ? (
+                <>
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">{t("template.aiHint")}</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={aiInput}
+                      onChange={(e) => setAiInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleAIAssist()}
+                      className="input-field flex-1"
+                      placeholder={t("template.aiExample")}
+                    />
+                    <button onClick={handleAIAssist} disabled={aiLoading || !aiInput.trim()} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-50">
+                      {aiLoading ? t("template.aiLoading") : t("template.aiSend")}
+                    </button>
+                  </div>
+                  {aiMessage && (
+                    <p className={`text-sm mt-2 ${aiMessage.startsWith("AI") ? "text-green-700 dark:text-green-300" : "text-blue-700 dark:text-blue-300"}`}>
+                      {aiMessage}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
+                    {t("template.aiLoginRequired")}
+                  </p>
+                  <button
+                    onClick={() => router.push("/login?next=/template-surat")}
+                    className="btn-primary !py-2 !px-4 text-sm"
+                  >
+                    {t("auth.login")}
+                  </button>
+                </div>
               )}
             </div>
           )}

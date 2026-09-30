@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getApiKey } from "@/lib/apikey";
+import { getUserFromRequest } from "@/lib/user-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,14 @@ function extractJson(raw: string): Record<string, string> | null {
 
 export async function POST(req: Request) {
   try {
+    const user = await getUserFromRequest(req);
+    if (!user) {
+      return NextResponse.json(
+        { summary: "Anda harus login untuk menggunakan fitur ini.", needsAuth: true },
+        { status: 401 }
+      );
+    }
+
     const body: Body = await req.json();
     const text = body.text?.trim() || "";
     const mode = body.mode || "ringkas";

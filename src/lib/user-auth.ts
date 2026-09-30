@@ -2,6 +2,8 @@ import { prisma } from "./prisma";
 
 const TOKEN_PREFIX = "hk_user_";
 
+export const USER_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 menit
+
 export function createUserToken(userId: number): string {
   const raw = Buffer.from(`${userId}:${Date.now()}`).toString("base64");
   return `${TOKEN_PREFIX}${raw}`;
@@ -13,8 +15,13 @@ export async function verifyUserToken(token: string | null | undefined) {
   try {
     const raw = token.slice(TOKEN_PREFIX.length);
     const decoded = Buffer.from(raw, "base64").toString("utf-8");
-    const userId = parseInt(decoded.split(":")[0], 10);
-    if (!userId) return null;
+    const parts = decoded.split(":");
+    const userId = parseInt(parts[0], 10);
+    const createdAt = parseInt(parts[1], 10);
+    if (!userId || !createdAt) return null;
+
+    // Auto-logout: token kedaluwarsa setelah 30 menit dibuat.
+    if (Date.now() - createdAt > USER_TOKEN_TTL_MS) return null;
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return null;
